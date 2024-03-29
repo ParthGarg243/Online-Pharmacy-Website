@@ -28,6 +28,9 @@ body{
 	color:#573b8a;
 	margin: 33px;
 }
+.input2{
+	background: #eee;
+}
 label{
 	color: #fff;
 	font-size: 2.3em;
