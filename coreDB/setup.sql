@@ -1,6 +1,10 @@
+-- Initializing Database
+
 DROP DATABASE IF EXISTS dbms_project;
 CREATE DATABASE dbms_project;
 USE dbms_project;
+
+-- Creating Tables
 
 CREATE TABLE support_ticket (
 ticket_id INT PRIMARY KEY NOT NULL,
@@ -46,6 +50,7 @@ status VARCHAR(20) CHECK(status IN ('Received', 'Shipped', 'Delivered', 'Process
 amount DECIMAL(10, 2),
 FOREIGN KEY (customer_email) REFERENCES customer(customer_email)
 );
+
 CREATE TABLE pharmacist (
 pharmacist_id INT PRIMARY KEY NOT NULL,
 pharmacy_id INT NOT NULL,
@@ -76,7 +81,8 @@ CREATE TABLE tech_manager (
 manager_id INT PRIMARY KEY NOT NULL,
 manager_password VARCHAR(20),
 manager_phone_number BIGINT,
-manager_first_name VARCHAR(25),manager_last_name VARCHAR(25),
+manager_first_name VARCHAR(25),
+manager_last_name VARCHAR(25),
 manager_address_line TEXT,
 manager_pincode INT,
 manager_gender CHAR(1)
@@ -89,7 +95,8 @@ price DECIMAL(10, 2),
 stock INT DEFAULT 0,
 main_ingredient VARCHAR(50),
 mode_of_taking VARCHAR(50),
-drug CHAR(1) CHECK (drug IN ('Y', 'N'))
+drug CHAR(1) CHECK (drug IN ('Y', 'N')),
+image_path VARCHAR(255)
 );
 
 CREATE TABLE ticket_resolution (
@@ -144,6 +151,8 @@ FOREIGN KEY (product_id) REFERENCES product(product_id),
 FOREIGN KEY (rider_id) REFERENCES rider(rider_id)
 );
 
+-- Inserting sample data
+
 INSERT INTO support_ticket (ticket_id, description, status) VALUES
 (1, 'Issue with login credentials', 'Open'),
 (2, 'Payment processing error', 'Open'),
@@ -155,6 +164,7 @@ INSERT INTO support_ticket (ticket_id, description, status) VALUES
 (8, 'Upgrade membership request', 'Open'),
 (9, 'Inquiry about product availability', 'Open'),
 (10, 'Delivery delay', 'Open');
+
 INSERT INTO customer (customer_email, customer_password, first_name,
 last_name, phone_number, date_of_birth, gender, membership, address_line,
 pincode) VALUES
@@ -177,6 +187,7 @@ pincode) VALUES
 '1983-04-12', 'M', 'Y', '999 Rajouri Garden', 110027),
 ('swati@example.com', 'pass901', 'Swati', 'Gulati', 9555333344,
 '1998-11-30', 'F', 'N', '1212 Paharganj', 110055);
+
 INSERT INTO support_executive (executive_id, executive_password,
 executive_first_name, executive_last_name, executive_phone_number,
 executive_gender, executive_address_line, executive_pincode) VALUES
@@ -255,6 +266,7 @@ INSERT INTO prescription (prescription_id, image) VALUES
 (8, LOAD_FILE('C:/prescription.jpg')),
 (9, LOAD_FILE('C:/prescription.jpg')),
 (10, LOAD_FILE('C:/prescription.jpg'));
+
 INSERT INTO rider (rider_id, rider_password, rider_phone_number,
 rider_first_name, rider_last_name, total_earnings) VALUES
 (1, 'rider1', 9812345678, 'Rajesh', 'Kumar', 500.00),
@@ -267,24 +279,27 @@ rider_first_name, rider_last_name, total_earnings) VALUES
 (8, 'rider8', 9555888899, 'Neelam', 'Dhillon', 480.00),
 (9, 'rider9', 9777777777, 'Sanjay', 'Malhotra', 625.00),
 (10, 'rider10', 9555333344, 'Kavita', 'Gulati', 720.00);
+
 INSERT INTO product (product_id, name, price, stock, main_ingredient,
-mode_of_taking, drug) VALUES
-(1, 'Pain Relief Tablets', 10.99, 100, 'Ibuprofen', 'Oral', 'Y'),
-(2, 'Antihistamine Syrup', 15.50, 50, 'Diphenhydramine', 'Oral', 'Y'),
-(3, 'Cough Syrup', 8.75, 75, 'Dextromethorphan', 'Oral', 'N'),
-(4, 'Vitamin C Tablets', 5.99, 200, 'Ascorbic Acid', 'Oral', 'N'),
-(5, 'Antibacterial Ointment', 12.25, 30, 'Neomycin', 'Topical', 'N'),
-(6, 'Allergy Relief Tablets', 18.50, 40, 'Loratadine', 'Oral', 'Y'),
-(7, 'Eye Drops', 9.99, 60, 'Naphazoline', 'Ophthalmic', 'N'),
+mode_of_taking, drug, image_path) VALUES
+(1, 'Pain Relief Tablets', 10.99, 100, 'Ibuprofen', 'Oral', 'Y', '../static/assets/tablet.jpg'),
+(2, 'Antihistamine Syrup', 15.50, 50, 'Diphenhydramine', 'Oral', 'Y', '../static/assets/syrup.jpg'),
+(3, 'Cough Syrup', 8.75, 75, 'Dextromethorphan', 'Oral', 'N', '../static/assets/syrup.jpg'),
+(4, 'Vitamin C Tablets', 5.99, 200, 'Ascorbic Acid', 'Oral', 'N', '../static/assets/tablet.jpg'),
+(5, 'Antibacterial Ointment', 12.25, 30, 'Neomycin', 'Topical', 'N', '../static/assets/ointment.jpg'),
+(6, 'Allergy Relief Tablets', 18.50, 40, 'Loratadine', 'Oral', 'Y', '../static/assets/tablet.jpg'),
+(7, 'Eye Drops', 9.99, 60, 'Naphazoline', 'Ophthalmic', 'N', '../static/assets/eyeDrop.jpg'),
 (8, 'Antacid Chewable Tablets', 7.50, 80, 'Calcium Carbonate', 'Oral',
-'N'),
-(9, 'Sunscreen Lotion', 14.75, 25, 'Avobenzone', 'Topical', 'N'),
-(10, 'Analgesic Cream', 11.25, 35, 'Menthol', 'Topical', 'N');
+'N', '../static/assets/tablet.jpg'),
+(9, 'Sunscreen Lotion', 14.75, 25, 'Avobenzone', 'Topical', 'N', '../static/assets/ointment.jpg'),
+(10, 'Analgesic Cream', 11.25, 35, 'Menthol', 'Topical', 'N', '../static/assets/ointment.jpg');
+
 INSERT INTO tech_manager (manager_id, manager_password, manager_first_name,
 manager_last_name, manager_phone_number, manager_gender,
 manager_address_line, manager_pincode) VALUES(1, 'mng1', 'Raj', 'Kumar', 9812345678, 'M', '123 Green Park', 110016),
 (2, 'mng2', 'Sunita', 'Sharma', 9876543210, 'F', '456 Lajpat Nagar',
 110024);
+
 INSERT INTO ticket_resolution (solution, ticket_id, customer_email,
 executive_id) VALUES
 ('Issue resolved', 1, 'rajan@example.com', 1),
@@ -297,6 +312,7 @@ executive_id) VALUES
 ('Membership upgraded', 8, 'anil@example.com', 3),
 ('Inquiry solved', 9, 'priya@example.com', 4),
 ('Issue resolved', 10, 'vikas@example.com', 5);
+
 INSERT INTO payment (mode, status, order_id, customer_email) VALUES
 ('Credit Card', TRUE, 1, 'rajan@example.com'),
 ('Cash on Delivery', FALSE, 2, 'neha@example.com'),
@@ -308,6 +324,7 @@ INSERT INTO payment (mode, status, order_id, customer_email) VALUES
 ('Debit Card', TRUE, 8, 'anil@example.com'),
 ('Net Banking', FALSE, 9, 'priya@example.com'),
 ('Wallet', TRUE, 10, 'vikas@example.com');
+
 INSERT INTO cart (quantity, customer_email, product_id) VALUES
 (2, 'rajan@example.com', 1),
 (1, 'neha@example.com', 3),
@@ -323,6 +340,7 @@ INSERT INTO cart (quantity, customer_email, product_id) VALUES
 (1, 'neha@example.com', 9),
 (3, 'anil@example.com', 6),(1, 'priya@example.com', 2),
 (2, 'vikas@example.com', 1);
+
 INSERT INTO order_approval (order_id, prescription_id, pharmacist_id)
 VALUES
 (1, 1, 1),
@@ -335,6 +353,7 @@ VALUES
 (8, 8, 8),
 (9, 9, 9),
 (10, 10, 10);
+
 INSERT INTO order_details (quantity, order_id, rider_id, product_id,
 ordered_at, commission) VALUES
 (2, 1, 1, 1, '2024-03-06 10:00:00', 10.50),
@@ -347,3 +366,40 @@ ordered_at, commission) VALUES
 (3, 8, 3, 5, '2024-03-06 17:00:00', 18.75),
 (1, 9, 4, 7, '2024-03-06 18:00:00', 6.25),
 (2, 10, 5, 9, '2024-03-06 19:00:00', 11.50);
+
+-- Trigger to update inventory whenever an order is placed
+
+DELIMITER //
+CREATE TRIGGER update_inventory_after_order
+AFTER INSERT ON order_details
+FOR EACH ROW
+BEGIN
+    DECLARE product_stock INT;
+    DECLARE ordered_quantity INT;
+    
+    SELECT stock INTO product_stock FROM product WHERE product_id = NEW.product_id;
+    
+    SELECT quantity INTO ordered_quantity FROM order_details WHERE order_id = NEW.order_id AND product_id = NEW.product_id;
+    
+    UPDATE product SET stock = product_stock - ordered_quantity WHERE product_id = NEW.product_id;
+END//
+DELIMITER ;
+
+-- Trigger to automatically assign a pharmacist to an order whenever a new one is placed 
+
+DELIMITER //
+CREATE TRIGGER automatic_pharmacist_assignment
+AFTER INSERT ON orders
+FOR EACH ROW
+BEGIN
+    DECLARE pharmacist_id INT;
+
+    SELECT pharmacist_id INTO pharmacist_id
+    FROM pharmacist
+    ORDER BY RAND()
+    LIMIT 1;
+    
+    INSERT INTO order_approval (order_id, pharmacist_id)
+    VALUES (NEW.order_id, pharmacist_id);
+END//
+DELIMITER ;
