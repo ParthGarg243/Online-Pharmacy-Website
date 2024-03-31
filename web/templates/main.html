@@ -12,7 +12,6 @@
     <header>
         <nav>
           <div class="logo">pharmacy</div>
-          <div class="logo">Hi! {{name}}</div>
           <div class="navbar">
             <div>
               <a href="#" style="text-decoration:none">Home</a>
@@ -31,7 +30,7 @@
 
         <!--Content before waves-->
         <div class="inner-header flex">
-        <h1>Delivering Care to Your Doorstep</h1>
+        <h1>Hi {{name}}! Delivering Care to Your Doorstep</h1>
         </div>
         
         <!--Waves Container-->
@@ -72,10 +71,9 @@
                     <form method="post" action="{%url 'cart' %}">
                         {% csrf_token %}
                         <input type="hidden" name="field1" value="{{key}}">
-                        <button type="submit">buy now</button>
+                        <button type="submit">add to cart</button>
                     </form>
                 </div>
-                
             </div>
         </div>
         {% endfor %}
