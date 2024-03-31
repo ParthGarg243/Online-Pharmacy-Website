@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    {% load static %}
+    <title>Pharmacy</title>
+    <link href="https://fonts.googleapis.com/css?family=Bentham|Playfair+Display|Raleway:400,500|Suranna|Trocchi" rel="stylesheet">
+	<link rel="stylesheet" type="text/css" href="{% static 'css/main.css'%}">
+</head>
+
+<body>
+    <header>
+        <nav>
+          <div class="logo">pharmacy</div>
+          <div class="logo">Hi! {{name}}</div>
+          <div class="navbar">
+            <div>
+              <a href="#" style="text-decoration:none">Home</a>
+            </div>
+            <div>
+              <a href="{%url 'cart' %}" style="text-decoration:none">Cart</a>
+            </div>
+            <div>
+              <a href="#" style="text-decoration:none">Profile</a>
+            </div>
+          </div>
+        </nav>
+    </header>
+
+    <div class="header">
+
+        <!--Content before waves-->
+        <div class="inner-header flex">
+        <h1>Delivering Care to Your Doorstep</h1>
+        </div>
+        
+        <!--Waves Container-->
+        <div>
+        <svg class="waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+        viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
+        <defs>
+        <path id="gentle-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" />
+        </defs>
+        <g class="parallax">
+        <use xlink:href="#gentle-wave" x="48" y="0" fill="rgba(255,255,255,0.7" />
+        <use xlink:href="#gentle-wave" x="48" y="3" fill="rgba(255,255,255,0.5)" />
+        <use xlink:href="#gentle-wave" x="48" y="5" fill="rgba(255,255,255,0.3)" />
+        <use xlink:href="#gentle-wave" x="48" y="7" fill="#fff" />
+        </g>
+        </svg>
+        </div>
+        <!--Waves end-->
+        
+    </div>
+
+    <h1 class="products-heading">Products</h1>
+    <div class="products-container">
+
+        {% for key, value in result.items %}
+        <div class="wrapper">
+            <div class="product-img">
+                <img src="http://bit.ly/2tMBBTd" height="420" width="327">
+            </div>
+            <div class="product-info">
+                <div class="product-text">
+                    <p style = "display: none">{{key}}</p>
+                    <h1>{{value.0}}</h1>
+                    <h2>{{value.3}}</h2>
+                </div>
+                <div class="product-price-btn">
+                    <p><span>{{value.2}}</span>$</p>
+                    <form method="post" action="{%url 'cart' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="field1" value="{{key}}">
+                        <button type="submit">buy now</button>
+                    </form>
+                </div>
+                
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</body>
+
+</html>

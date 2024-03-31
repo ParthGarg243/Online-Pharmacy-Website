@@ -2,29 +2,36 @@
 <html>
 <head>
 	<title>onBoarding</title>
-	<link rel="stylesheet" type="text/css" href="css/onBoarding.css">
-<link href="https://fonts.googleapis.com/css2?family=Jost:wght@500&display=swap" rel="stylesheet">
+    {% load static %}
+
+	<link rel="stylesheet" type="text/css" href="{% static 'css/login.css' %}">
+	<link href="https://fonts.googleapis.com/css2?family=Jost:wght@500&display=swap" rel="stylesheet">
 </head>
 <body>
 	<div class="main">  	
 		<input type="checkbox" id="chk" aria-hidden="true">
 
-			<div class="signup">
-				<form>
+			<div class="signup" style="display: hidden">
+				<form form action="/" method="post">
+					{% csrf_token %}
+				
                     <label class="signup-text" for="chk" aria-hidden="true">Sign up</label>
                     <input type="text" name="txt" placeholder="Name" required="">
                     <input type="email" name="email" placeholder="Email" required="">
                     <input type="password" name="pswd" placeholder="Password" required="">
+					<p>{{my_list}}</p>
                     <input type="tel" name="phone" placeholder="Phone number" required="">
                     <input type="text" name="address" placeholder="Address" required="">
 					<input type="text" name="pincode" placeholder="Pin code" required="">
                     <input type="date" name="dob" required="">
-                    <button>Sign up</button>
+                    <button type = "submit">Sign up</button>
 				</form>
 			</div>
 
 			<div class="login">
-				<form>
+				<p>{{invalid}}</p>
+				<form method="post" action="{%url 'helper' %}">
+					{% csrf_token %}
 					<label for="chk" aria-hidden="true">Login</label>
 					<input class="input2" type="email" name="email" placeholder="Email" required="">
 					<input class="input2" type="password" name="pswd" placeholder="Password" required="">
