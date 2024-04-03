@@ -63,6 +63,7 @@ pharmacist_address_line TEXT,
 pharmacist_pincode INT,
 FOREIGN KEY (pharmacy_id) REFERENCES pharmacy(branch_id)
 );
+
 CREATE TABLE prescription (
 prescription_id INT PRIMARY KEY NOT NULL,
 image BLOB
