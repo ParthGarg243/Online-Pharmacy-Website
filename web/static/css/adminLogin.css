@@ -15,7 +15,7 @@ body{
 
 .main{
 	width: 400px;
-	height: 700px;
+	height: 325px;
 	background: #ffffff;
 	overflow: hidden;
 	border-radius: 10px;
@@ -31,10 +31,6 @@ body{
 .signup-text{
 	color:#573b8a;
 	margin: 33px;
-}
-
-.input2{
-	background: #eee;
 }
 
 label{
@@ -80,20 +76,6 @@ button{
 
 button:hover{
 	background: #6d44b8;
-}
-
-.login{
-	height: 750px;
-	background: #eee;
-	border-radius: 33% / 10%;
-	transform: translateY(-180px);
-	transition: .8s ease-in-out;
-}
-
-.login label{
-	padding-top:10px;
-	color: #573b8a;
-	transform: scale(.6);
 }
 
 #chk:checked ~ .login{
