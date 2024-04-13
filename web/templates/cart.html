@@ -1,85 +1,140 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    {% load static %}
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        {% load static %}
 
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cart</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
-    <link rel="stylesheet" href="{% static 'css/cart.css' %}">
-</head>
-<body>
-    <header>
-        <nav>
-          <div class="logo">pharmacy</div>
-          <div class="navbar">
-            <div>
-              <a href="{%url 'main' %}" style="text-decoration:none">Home</a>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Cart</title>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+        <link rel="stylesheet" href="{% static 'css/cart.css' %}">
+    </head>
+    <body>
+        <header>
+            <nav>
+            <div class="logo">pharmacy</div>
+            <div class="navbar">
+                <div>
+                <a href="{%url 'main' %}" style="text-decoration:none">Home</a>
+                </div>
+                <div>
+                <a href="#" style="text-decoration:none">Cart</a>
+                </div>
+                <div>
+                <a href="#" style="text-decoration:none">Profile</a>
+                </div>
             </div>
-            <div>
-              <a href="#" style="text-decoration:none">Cart</a>
-            </div>
-            <div>
-              <a href="#" style="text-decoration:none">Profile</a>
-            </div>
-          </div>
-        </nav>
-    </header>
+            </nav>
+        </header>
 
-    <div class="card">
-        <div class="row">
-            <div class="col-md-8 cart">
-                <div class="title">
+        <div class="card">
+            <div class="row">
+                <div class="col-md-8 cart">
+                    <div class="title">
+                        <div class="row">
+                            <div class="col"><h4><b>Shopping Cart</b></h4></div>
+                            <!--<div class="col align-self-center text-right text-muted">3 items</div>--> <!--will work on this later-->
+                        </div>
+                    </div>    
+
+                    {% for value in cart%}
                     <div class="row">
-                        <div class="col"><h4><b>Shopping Cart</b></h4></div>
-                        <!--<div class="col align-self-center text-right text-muted">3 items</div>--> <!--will work on this later-->
-                    </div>
-                </div>    
+                        <div class="row main align-items-center">
+                            <div class="col-2"><img class="img-fluid" src="{{value.10}}"></div>
+                            <div class="col">
+                                <div class="row text-muted">{{value.4}}</div>
+                                <div class="row">{{value.7}}</div>
+                            </div>
+                            <div class="col">
+                                <form method="post" action="{%url 'cart' %}">
+                                    {% csrf_token %}
 
-                {% for value in cart%}
-                <div class="row">
-                    <div class="row main align-items-center">
-                        <div class="col-2"><img class="img-fluid" src="{{value.10}}"></div>
-                        <div class="col">
-                            <div class="row text-muted">{{value.4}}</div>
-                            <div class="row">{{value.7}}</div>
+                                    <input type="text" name="pid" value="{{value.2}}" style = "display: none;">
+                                    <input type="text" name="action" value="remove" style = "display: none;">
+                                    <button type="submit">-</button>
+                                </form>
+
+                                <a class="border">{{value.0}}</a>
+                                <form method="post" action="{%url 'cart' %}">
+                                    {% csrf_token %}
+                                    <input type="text" name="pid" value="{{value.2}}" style = "display: none;">
+                                    <input type="text" name="action" value="add" style = "display: none;">
+                                    <button type="submit">+</button>
+                                </form>                        
+                            </div>
+                            <div class="col">$ {{value.5}}<span class="close">&#10005;</span></div>
+                            
                         </div>
-                        <div class="col">
-                            <a href="#">-</a><a href="#" class="border">{{value.0}}</a><a href="#">+</a>
-                        </div>
-                        <div class="col">$ {{value.5}}<span class="close">&#10005;</span></div>
                     </div>
-                </div>
-                {% endfor %}
+                    {% endfor %}
+                    
+                    <p>{{error}}</p>
 
-                <div class="back-to-shop"><a href="{%url 'main' %}">&leftarrow;</a><span class="text-muted">Back to shop</span></div>
-            </div>
+                    <div class="back-to-shop"><a href="{%url 'main' %}">&leftarrow;</a><span class="text-muted">Back to shop</span></div>
+                </div>
 
-            <!-- will work on this later-->
-            
-            <div class="col-md-4 summary">
-                <div><h5><b>Summary</b></h5></div>
-                <hr>
-                <div class="row">
-                    <div class="col" style="padding-left:0;">ITEMS 3</div>
-                    <div class="col text-right">&euro; 132.00</div>
+                <!-- will work on this later-->
+                
+                <div class="col-md-4 summary">
+                    <div><h5><b>Summary</b></h5></div>
+                    <hr>
+                    <div class="row">
+                        <div class="col" style="padding-left:0;">ITEMS 3</div>
+                        <div class="col text-right">&euro; {{total}}</div>
+                    </div>
+                    <form>
+                        {% csrf_token %}
+
+                        <p>SHIPPING</p>
+                        <select><option class="text-muted">Standard-Delivery- &euro;5.00</option></select>
+                        <p>GIVE CODE</p>
+                        <input id="code" placeholder="Enter your code">
+                    </form>
+                    <div class="row" style="border-top: 1px solid rgba(0,0,0,.1); padding: 2vh 0;">
+                        <div class="col">TOTAL PRICE</div>
+                        <div class="col text-right">&euro; {{total_delivery}}</div>
+                    </div>
+                    <button class="btn">CHECKOUT</button>
                 </div>
-                <form>
-                    <p>SHIPPING</p>
-                    <select><option class="text-muted">Standard-Delivery- &euro;5.00</option></select>
-                    <p>GIVE CODE</p>
-                    <input id="code" placeholder="Enter your code">
-                </form>
-                <div class="row" style="border-top: 1px solid rgba(0,0,0,.1); padding: 2vh 0;">
-                    <div class="col">TOTAL PRICE</div>
-                    <div class="col text-right">&euro; 137.00</div>
-                </div>
-                <button class="btn">CHECKOUT</button>
             </div>
         </div>
-    </div>
-</body>
-</html>
+    </body>
+    </html>
+
+    <!--
+    <script>
+    document.getElementById("minus").addEventListener("click", function() {
+    // Create a new XMLHttpRequest object
+    var xhr = new XMLHttpRequest();
+    
+    // Define the POST request parameters
+    xhr.open("POST", "{%url 'cart' %}", true); // Replace "https://example.com/submit-url" with your desired URL
+    xhr.setRequestHeader("static", "application/json"); // Set the Content-Type header if sending JSON data
+    
+    // Define the data to be sent
+    var data = {
+        'cart': cart,
+        'id' : this.id,
+        'action' : 'minus'
+    };
+    
+    // Convert data to JSON format
+    var jsonData = JSON.stringify(data);
+    
+    // Set up the callback function to handle the response
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+        // Request was successful
+        console.log("Data posted successfully.");
+        } else {
+        // Request failed
+        console.error("Failed to post data.");
+        }
+    };
+    
+    // Send the POST request with the data
+    xhr.send(jsonData);
+    });
+    </script>-->

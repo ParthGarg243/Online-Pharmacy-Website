@@ -285,7 +285,7 @@ INSERT INTO product (product_id, name, price, stock, main_ingredient,
 mode_of_taking, drug, image_path) VALUES
 (1, 'Pain Relief Tablets', 10.99, 100, 'Ibuprofen', 'Oral', 'Y', '../static/assets/tablet.jpg'),
 (2, 'Antihistamine Syrup', 15.50, 50, 'Diphenhydramine', 'Oral', 'Y', '../static/assets/syrup.jpg'),
-(3, 'Cough Syrup', 8.75, 75, 'Dextromethorphan', 'Oral', 'N', '../static/assets/syrup.jpg'),
+(3, 'Cough Syrup', 8.75, 75, 'Methamphetamine', 'Oral', 'N', '../static/assets/syrup.jpg'),
 (4, 'Vitamin C Tablets', 5.99, 200, 'Ascorbic Acid', 'Oral', 'N', '../static/assets/tablet.jpg'),
 (5, 'Antibacterial Ointment', 12.25, 30, 'Neomycin', 'Topical', 'N', '../static/assets/ointment.jpg'),
 (6, 'Allergy Relief Tablets', 18.50, 40, 'Loratadine', 'Oral', 'Y', '../static/assets/tablet.jpg'),

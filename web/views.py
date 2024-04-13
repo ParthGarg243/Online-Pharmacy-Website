@@ -143,7 +143,7 @@ def main(request):
         #fetch all items from database
         #put relevant shit in context and pass to html
         with connection.cursor() as cursor:
-            cursor.execute('SELECT * FROM product')
+            cursor.execute('SELECT * FROM product WHERE stock != 0')
             sql_data = cursor.fetchall()
 
         with connection.cursor() as cursor:
@@ -160,7 +160,7 @@ def main(request):
             result[key] = value
         print(result)
         return render(request, 'main.html', {'result': result, 'name': sql_data1[0][2]})
-    else:
+    else:   
         return redirect('login')
 
 def cart(request):
@@ -170,43 +170,132 @@ def cart(request):
         if request.method == 'POST':
             #if theres already stuff to update
             data_received = request.POST
-
-            #update
-            ''' #customer data why did i do this nigesh?
-            with connection.cursor() as cursor:
-                cursor.execute('SELECT * FROM customer WHERE customer_email = %s', (cookie_value,))
-                sql_customer = cursor.fetchall()'''
             print(data_received)
-            #fetch and then delete and then insert
-            with connection.cursor() as cursor:
-                cursor.execute('SELECT * FROM cart, product WHERE customer_email = %s and cart.product_id = product.product_id and cart.product_id = %s', (cookie_value, data_received['field1'][0],))
-                sql_cart_data = cursor.fetchall()
-            
-            print(sql_cart_data)
-            
-            if(len(sql_cart_data) == 1):
-                currQty = sql_cart_data[0][0]
-                
-                currQty += 1
+            if 'action' in data_received: #if its about updating value increment decrement
+                #check
+                print(data_received['pid'])
+                with connection.cursor() as cursor:
+                    cursor.execute('SELECT stock, name FROM product WHERE product_id = %s', (data_received['pid'][0],))
+                    curr_product_stock = cursor.fetchall() 
+                print(curr_product_stock)
+                #update inventory and stock
+                err = False
+                if (curr_product_stock[0][0] > 0 and data_received['action'] == 'add'): #if stock is there
+                    #update value of stock
+                    print(curr_product_stock)
+                    newStock = curr_product_stock[0][0] - 1
 
-                #print(data_received, sql_customer)
-                print(int(data_received['field1'][0]))
+                    with connection.cursor() as cursor:
+                        cursor.execute('UPDATE product SET stock = %s WHERE product_id = %s', (newStock, data_received['pid'][0],))
+                    #update value of cart
+                    with connection.cursor() as cursor:
+                        cursor.execute('SELECT * FROM cart, product WHERE customer_email = %s and cart.product_id = product.product_id and cart.product_id = %s', (cookie_value, data_received['pid'][0],))
+                        cart_data_product = cursor.fetchall()
+                
+                    print(cart_data_product)
+                
+                    newQty = cart_data_product[0][0] + 1
+
+                    with connection.cursor() as cursor:
+                        cursor.execute('UPDATE cart SET quantity = %s WHERE product_id = %s and customer_email = %s ', (newQty, data_received['pid'][0], cookie_value, ))
+                elif(data_received['action'] == 'remove'):
+                     #update value of stock
+                    newStock = curr_product_stock[0][0] + 1
+
+                    with connection.cursor() as cursor:
+                        cursor.execute('UPDATE product SET stock = %s WHERE product_id = %s', (newStock, data_received['pid'][0],))
+                    #update value of cart
+                    with connection.cursor() as cursor:
+                        cursor.execute('SELECT * FROM cart, product WHERE customer_email = %s and cart.product_id = product.product_id and cart.product_id = %s', (cookie_value, data_received['pid'][0],))
+                        cart_data_product = cursor.fetchall()
+                
+                    print(cart_data_product)
+                
+                    newQty = cart_data_product[0][0] - 1
+                    if newQty == 0:
+                        with connection.cursor() as cursor:
+                            cursor.execute('DELETE FROM cart WHERE product_id = %s and customer_email = %s', (data_received['pid'][0], cookie_value, ))
+                    else:
+                        with connection.cursor() as cursor:
+                            cursor.execute('UPDATE cart SET quantity = %s WHERE product_id = %s and customer_email = %s ', (newQty, data_received['pid'][0], cookie_value, ))
+                elif(curr_product_stock[0][0] == 0 and data_received['action'] == 'add'): #if stock is not there
+                    #then fetch
+                    err = True
+                
+                with connection.cursor() as cursor:
+                    cursor.execute('SELECT * FROM cart, product WHERE customer_email = %s and cart.product_id = product.product_id', (cookie_value,))
+                    cart_all = cursor.fetchall()
+
+                print(cart_all)
+                total = 0
+                for item in cart_all:
+                    total += item[0] * item[5]
+                print(total)
+
+                #then render#
+                if err: # need  to fix a appropriate error message for out of stock
+                    #append to the item and uhhhhhh yeah so if it matches pid and then append it to the thing and thang
+                    return render(request, "cart.html", {'cart': cart_all, 'total': total, 'total_delivery': total+5, 'error': curr_product_stock[0][1] + ' is out of stock!'})
+                else:
+                    return render(request, "cart.html", {'cart': cart_all, 'total': total, 'total_delivery': total+5})
+        
+                        #update
+                    #update cart
+                    #update stock
+
+                #render
+
+            else: #if its add cart from main
+                #update #for out of stock make changes on main and blur out the button so you cant add
+
+                ''' #customer data why did i do this nigesh?
+                with connection.cursor() as cursor:
+                    cursor.execute('SELECT * FROM customer WHERE customer_email = %s', (cookie_value,))
+                    sql_customer = cursor.fetchall()'''
+                #fetch and then delete and then insert
+                with connection.cursor() as cursor:
+                    cursor.execute('SELECT * FROM cart, product WHERE customer_email = %s and cart.product_id = product.product_id and cart.product_id = %s', (cookie_value, data_received['field1'][0],))
+                    sql_cart_data = cursor.fetchall()
+                
+                print(sql_cart_data)
+                
+                if(len(sql_cart_data) == 1): #if its to be updated
+                    currQty = sql_cart_data[0][0] + 1
+
+                    #print(data_received, sql_customer)
+                    print(int(data_received['field1'][0]))
+
+                    with connection.cursor() as cursor:
+                        cursor.execute('UPDATE cart SET quantity = %s WHERE product_id = %s and customer_email = %s ', (currQty, data_received['field1'][0], cookie_value, ))
+                else: #fresh insert
+                    with connection.cursor() as cursor:
+                        cursor.execute('INSERT INTO cart (quantity, customer_email, product_id) VALUES (1, %s, %s)', (cookie_value, data_received['field1'][0],))        
+
+                #update stock
+    
+                with connection.cursor() as cursor:
+                    cursor.execute('SELECT stock, name FROM product WHERE product_id = %s', (sql_cart_data[0][2],))
+                    curr_product_stock = cursor.fetchall() 
+                
+                newStock = curr_product_stock[0][0] - 1
 
                 with connection.cursor() as cursor:
-                    cursor.execute('DELETE FROM cart WHERE customer_email = %s and cart.product_id = %s', (cookie_value, data_received['field1'][0],))
-                    cursor.execute('INSERT INTO cart (quantity, customer_email, product_id) VALUES (%s, %s, %s)', (str(currQty), cookie_value, data_received['field1'][0]))             
-            else:
-                 with connection.cursor() as cursor:
-                    cursor.execute('INSERT INTO cart (quantity, customer_email, product_id) VALUES (1, %s, %s)', (cookie_value, data_received['field1'][0],))        
+                    cursor.execute('UPDATE product SET stock = %s WHERE product_id = %s', (newStock, sql_cart_data[0][2],))
 
-            #then fetch
-            with connection.cursor() as cursor:
-                cursor.execute('SELECT * FROM cart, product WHERE customer_email = %s and cart.product_id = product.product_id', (cookie_value,))
-                sql_data2 = cursor.fetchall()
 
-            print(sql_data2)
-            #then render
-            return render(request, "cart.html", {'cart': sql_data2})
+                #then fetch
+                with connection.cursor() as cursor:
+                    cursor.execute('SELECT * FROM cart, product WHERE customer_email = %s and cart.product_id = product.product_id', (cookie_value,))
+                    sql_data2 = cursor.fetchall()
+
+                print(sql_data2)
+                total = 0
+                for item in sql_data2:
+                    total += item[0] * item[5]
+                print(total)
+
+                #then render
+                return render(request, "cart.html", {'cart': sql_data2, 'total': total, 'total_delivery': total+5})
         else:
             #then fetch
             with connection.cursor() as cursor:
@@ -214,8 +303,13 @@ def cart(request):
                 sql_data2 = cursor.fetchall()
 
             print(sql_data2)
-            #then render
-            return render(request, "cart.html", {'cart': sql_data2})
+            total = 0
+            for item in sql_data2:
+                total += item[0] * item[5]
+            print(total)
 
+            #then render#
+            return render(request, "cart.html", {'cart': sql_data2, 'total': total, 'total_delivery': total+5})
+            
     else:
         return redirect('login')
