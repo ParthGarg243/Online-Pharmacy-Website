@@ -274,13 +274,13 @@ def cart(request):
                 #update stock
     
                 with connection.cursor() as cursor:
-                    cursor.execute('SELECT stock, name FROM product WHERE product_id = %s', (sql_cart_data[0][2],))
+                    cursor.execute('SELECT stock, name FROM product WHERE product_id = %s', (data_received['field1'][0],))
                     curr_product_stock = cursor.fetchall() 
                 
                 newStock = curr_product_stock[0][0] - 1
 
                 with connection.cursor() as cursor:
-                    cursor.execute('UPDATE product SET stock = %s WHERE product_id = %s', (newStock, sql_cart_data[0][2],))
+                    cursor.execute('UPDATE product SET stock = %s WHERE product_id = %s', (newStock, data_received['field1'][0],))
 
 
                 #then fetch
@@ -313,3 +313,101 @@ def cart(request):
             
     else:
         return redirect('login')
+
+
+def checkout(request):
+    cookie_value = request.COOKIES.get('login_set', 'no')
+    print(cookie_value)
+    if(cookie_value != 'no'):
+        if request.method == 'POST':
+            user_data = request.POST
+            print(user_data)
+
+            pids = user_data.getlist('pid')
+            qtys = user_data.getlist('qty')
+
+            print(pids)
+            print(qtys)
+            
+            #find the new new boy in the town
+            with connection.cursor() as cursor:
+                cursor.execute('SELECT max(order_id) FROM orders')
+                order_data = cursor.fetchall()
+            
+            latestCount = order_data[0][0] + 1
+            print(latestCount)
+
+            print(user_data['total'])
+            #order_id INT PRIMARY KEY NOT NULL,
+            #put in order_history
+            with connection.cursor() as cursor:
+                cursor.execute('INSERT INTO orders (order_id, customer_email, status, amount, ordered_at, commission, rider_id) VALUES (%s, %s, %s, %s, %s, %s, %s)', (latestCount, cookie_value, 'Received', user_data['total'], datetime.now(), 0, 1))
+
+            #need to fix rider and comisssion , default value for now 0
+            
+            #put in order_details
+            n = len(pids)
+            for i in range(n):
+                currProduct = pids[i]
+                currQty = qtys[i]
+
+                with connection.cursor() as cursor:
+                    cursor.execute('INSERT INTO order_details (quantity, order_id, product_id) VALUES (%s, %s, %s)', (currQty, latestCount, currProduct))        
+            
+            #delete from cart
+            with connection.cursor() as cursor:
+                cursor.execute('DELETE FROM cart WHERE customer_email = %s', (cookie_value,))
+
+            #should fix resubmission form
+
+            return render(request, 'thankyou.html')
+        else:
+            return redirect('main')
+            
+    else:
+        return redirect('login')
+
+@csrf_protect
+def admin(request):
+    cookie_value = request.COOKIES.get('admin_set', 'no')
+    print(cookie_value)
+    if(cookie_value != "no"):
+        return redirect('dashboard')
+    else:
+        #if its post or not
+        if request.method == 'POST':
+            data_received = request.POST
+            print(data_received)
+
+            #check db
+            with connection.cursor() as cursor:
+                cursor.execute('SELECT pharmacist_id, pharmacist_password FROM pharmacist WHERE pharmacist_id = %s AND pharmacist_password = %s', (data_received['id'], data_received['pswd']))
+                sql_data = cursor.fetchall()
+            
+            if len(sql_data) == 1:
+                #redirect
+                response = redirect('dashboard')
+                response.set_cookie('admin_set', data_received['id'], expires='Thu, 31 Dec 2024 23:59:59 GMT', path='/')
+                return response
+            else:
+                context = {'invalid': 'Invalid credentials! Please try again!'}
+                return render(request, 'adminLogin.html', context)
+
+        else:
+            return render(request, 'adminLogin.html')
+
+def dashboard(request):
+    cookie_value = request.COOKIES.get('admin_set', 'no')
+    print(cookie_value)
+    if(cookie_value != "no"):
+        #stick to page
+        #fetch values
+        with connection.cursor() as cursor:
+            cursor.execute('SELECT name, image_path, buys, stock FROM product as p, (SELECT sum(quantity) As \'buys\', product_id FROM order_details GROUP BY product_id) as r WHERE p.product_id = r.product_id')
+
+            sql_data = cursor.fetchall()
+        print(sql_data)
+        #then send
+        return render(request, 'productStats.html', {'stats' : sql_data})
+    else:
+        redirect('admin')

@@ -43,13 +43,7 @@ pharmacy_address_line TEXT,
 pharmacy_pincode INT
 );
 
-CREATE TABLE orders (
-order_id INT PRIMARY KEY NOT NULL,
-customer_email VARCHAR(100) NOT NULL,
-status VARCHAR(20) CHECK(status IN ('Received', 'Shipped', 'Delivered', 'Processing', 'Cancelled', 'Packed','Pending')),
-amount DECIMAL(10, 2),
-FOREIGN KEY (customer_email) REFERENCES customer(customer_email)
-);
+
 
 CREATE TABLE pharmacist (
 pharmacist_id INT PRIMARY KEY NOT NULL,
@@ -76,6 +70,18 @@ rider_phone_number BIGINT,
 rider_first_name VARCHAR(25),
 rider_last_name VARCHAR(25),
 total_earnings DECIMAL(10, 2)
+);
+
+CREATE TABLE orders (
+    order_id INT PRIMARY KEY NOT NULL,
+    customer_email VARCHAR(100) NOT NULL,
+    status VARCHAR(20) CHECK(status IN ('Received', 'Shipped', 'Delivered', 'Processing', 'Cancelled', 'Packed','Pending')),
+    rider_id INT NOT NULL,
+    ordered_at DATETIME,
+    amount DECIMAL(10, 2) NOT NULL, 
+    commission DECIMAL(10, 2) NOT NULL,
+    FOREIGN KEY (customer_email) REFERENCES customer(customer_email),
+    FOREIGN KEY (rider_id) REFERENCES rider(rider_id)
 );
 
 CREATE TABLE tech_manager (
@@ -140,16 +146,12 @@ FOREIGN KEY (pharmacist_id) REFERENCES pharmacist(pharmacist_id)
 );
 
 CREATE TABLE order_details (
-quantity INT DEFAULT 0,
+quantity INT NOT NULL,
 order_id INT NOT NULL,
-rider_id INT NOT NULL,
 product_id INT NOT NULL,
-ordered_at DATETIME,
-commission DECIMAL(10, 2) NOT NULL,
-PRIMARY KEY (order_id, rider_id, product_id),
+PRIMARY KEY (order_id, product_id),
 FOREIGN KEY (order_id) REFERENCES orders(order_id),
-FOREIGN KEY (product_id) REFERENCES product(product_id),
-FOREIGN KEY (rider_id) REFERENCES rider(rider_id)
+FOREIGN KEY (product_id) REFERENCES product(product_id)
 );
 
 -- Inserting sample data
@@ -221,17 +223,6 @@ pharmacy_pincode) VALUES
 (9, 9988776655, '89 Rajouri Garden', 110027),
 (10, 9988776655, '45 Paharganj', 110055);
 
-INSERT INTO orders (order_id, customer_email, status, amount) VALUES
-(1, 'rajan@example.com', 'Received', 50.00),
-(2, 'neha@example.com', 'Delivered', 75.50),
-(3, 'anil@example.com', 'Processing', 30.25),
-(4, 'priya@example.com', 'Cancelled', 20.00),
-(5, 'vikas@example.com', 'Shipped', 45.75),
-(6, 'rajan@example.com', 'Packed', 60.80),
-(7, 'neha@example.com', 'Pending', 35.20),
-(8, 'anil@example.com', 'Processing', 85.00),
-(9, 'priya@example.com', 'Delivered', 40.50),
-(10, 'vikas@example.com', 'Pending', 55.25);
 
 INSERT INTO pharmacist (pharmacist_id, pharmacy_id, pharmacist_password,
 pharmacist_first_name, pharmacist_last_name, pharmacist_phone_number,
@@ -285,7 +276,7 @@ INSERT INTO product (product_id, name, price, stock, main_ingredient,
 mode_of_taking, drug, image_path) VALUES
 (1, 'Pain Relief Tablets', 10.99, 100, 'Ibuprofen', 'Oral', 'Y', '../static/assets/tablet.jpg'),
 (2, 'Antihistamine Syrup', 15.50, 50, 'Diphenhydramine', 'Oral', 'Y', '../static/assets/syrup.jpg'),
-(3, 'Cough Syrup', 8.75, 75, 'Methamphetamine', 'Oral', 'N', '../static/assets/syrup.jpg'),
+(3, 'Cough Syrup', 8.75, 75, 'Dextromethorphan', 'Oral', 'N', '../static/assets/syrup.jpg'),
 (4, 'Vitamin C Tablets', 5.99, 200, 'Ascorbic Acid', 'Oral', 'N', '../static/assets/tablet.jpg'),
 (5, 'Antibacterial Ointment', 12.25, 30, 'Neomycin', 'Topical', 'N', '../static/assets/ointment.jpg'),
 (6, 'Allergy Relief Tablets', 18.50, 40, 'Loratadine', 'Oral', 'Y', '../static/assets/tablet.jpg'),
@@ -294,6 +285,19 @@ mode_of_taking, drug, image_path) VALUES
 'N', '../static/assets/tablet.jpg'),
 (9, 'Sunscreen Lotion', 14.75, 25, 'Avobenzone', 'Topical', 'N', '../static/assets/ointment.jpg'),
 (10, 'Analgesic Cream', 11.25, 35, 'Menthol', 'Topical', 'N', '../static/assets/ointment.jpg');
+
+
+INSERT INTO orders (order_id, customer_email, status, rider_id, ordered_at, amount, commission) VALUES
+(1, 'rajan@example.com', 'Received', 1, '2024-03-06 10:00:00', 100.00, 0.00), 
+(2, 'neha@example.com', 'Delivered', 2, '2024-03-06 11:00:00', 150.00, 0.00),
+(3, 'anil@example.com', 'Processing', 3, '2024-03-06 12:00:00', 200.00, 0.00),
+(4, 'priya@example.com', 'Cancelled', 4, '2024-03-06 13:00:00', 50.00, 0.00),
+(5, 'vikas@example.com', 'Shipped', 1, '2024-03-06 14:00:00', 75.00, 0.00),
+(6, 'rajan@example.com', 'Packed', 6, '2024-03-06 15:00:00', 120.00, 0.00),
+(7, 'neha@example.com', 'Pending', 7, '2024-03-06 16:00:00', 90.00, 0.00),
+(8, 'anil@example.com', 'Processing', 8, '2024-03-06 17:00:00', 80.00, 0.00),
+(9, 'priya@example.com', 'Delivered', 9, '2024-03-06 18:00:00', 160.00, 0.00),
+(10, 'vikas@example.com', 'Pending', 10, '2024-03-06 19:00:00', 110.00, 0.00);
 
 INSERT INTO tech_manager (manager_id, manager_password, manager_first_name,
 manager_last_name, manager_phone_number, manager_gender,
@@ -355,18 +359,17 @@ VALUES
 (9, 9, 9),
 (10, 10, 10);
 
-INSERT INTO order_details (quantity, order_id, rider_id, product_id,
-ordered_at, commission) VALUES
-(2, 1, 1, 1, '2024-03-06 10:00:00', 10.50),
-(1, 2, 2, 3, '2024-03-06 11:00:00', 8.75),
-(3, 3, 3, 5, '2024-03-06 12:00:00', 15.25),
-(1, 4, 4, 7, '2024-03-06 13:00:00', 5.00),
-(2, 5, 5, 9, '2024-03-06 14:00:00', 12.00),
-(2, 6, 1, 1, '2024-03-06 15:00:00', 10.00),
-(1, 7, 2, 3, '2024-03-06 16:00:00', 7.50),
-(3, 8, 3, 5, '2024-03-06 17:00:00', 18.75),
-(1, 9, 4, 7, '2024-03-06 18:00:00', 6.25),
-(2, 10, 5, 9, '2024-03-06 19:00:00', 11.50);
+INSERT INTO order_details (quantity, order_id, product_id) VALUES
+(2, 1, 1),
+(1, 2, 3),
+(3, 3, 5),
+(1, 4, 7),
+(2, 5, 9),
+(2, 6, 1),
+(1, 7, 3),
+(3, 8, 5),
+(1, 9, 7),
+(2, 10, 9);
 
 -- Trigger to update inventory whenever an order is placed
 
