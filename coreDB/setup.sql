@@ -375,14 +375,14 @@ CREATE TRIGGER update_inventory_after_order
 AFTER INSERT ON order_details
 FOR EACH ROW
 BEGIN
-    DECLARE product_stock INT;
-    DECLARE ordered_quantity INT;
+	DECLARE new_product_id INT;
+    DECLARE new_quantity INT;
     
-    SELECT stock INTO product_stock FROM product WHERE product_id = NEW.product_id;
+    SELECT MAX(product_id) INTO new_product_id FROM order_details GROUP BY order_id HAVING order_id = (SELECT MAX(order_id) FROM order_details);
     
-    SELECT quantity INTO ordered_quantity FROM order_details WHERE order_id = NEW.order_id AND product_id = NEW.product_id;
+    SELECT quantity INTO new_quantity FROM order_details WHERE order_id = (SELECT MAX(order_id) FROM order_details) AND product_id = (SELECT MAX(product_id) FROM order_details GROUP BY order_id HAVING order_id = (SELECT MAX(order_id) FROM order_details));
     
-    UPDATE product SET stock = product_stock - ordered_quantity WHERE product_id = NEW.product_id;
+    UPDATE product SET stock = stock - new_quantity WHERE product_id = new_product_id;
 END//
 DELIMITER ;
 
@@ -393,14 +393,24 @@ CREATE TRIGGER automatic_pharmacist_assignment
 AFTER INSERT ON orders
 FOR EACH ROW
 BEGIN
-    DECLARE pharmacist_id INT;
+    DECLARE new_pharmacist_id INT;
+    DECLARE new_order_id INT;
+    DECLARE new_prescription_id INT;
 
-    SELECT pharmacist_id INTO pharmacist_id
+    SELECT pharmacist_id INTO new_pharmacist_id
     FROM pharmacist
     ORDER BY RAND()
     LIMIT 1;
     
-    INSERT INTO order_approval (order_id, pharmacist_id)
-    VALUES (NEW.order_id, pharmacist_id);
+    SELECT MAX(prescription_id) INTO new_prescription_id
+    FROM prescription
+    ORDER BY RAND()
+    LIMIT 1;
+    
+    SELECT MAX(order_id) INTO new_order_id 
+    FROM orders;
+    
+    INSERT INTO order_approval (order_id, prescription_id, pharmacist_id)
+    VALUES (new_order_id, new_prescription_id, new_pharmacist_id);
 END//
 DELIMITER ;
