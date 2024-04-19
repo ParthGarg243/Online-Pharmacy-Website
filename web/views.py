@@ -6,13 +6,16 @@ from django.http import HttpResponseRedirect
 from django.db import connection
 from django.shortcuts import redirect
 
+#use views.py for serving a page
+#for updating elements use ajax
+
 #one url one function one render
 # Create your views here.
 def login(request):
     #if cookies exist
     cookie_value = request.COOKIES.get('login_set', 'no')
     print(cookie_value)
-    if(cookie_value != "no"):
+    if(cookie_value != None and cookie_value != 'no'):
         return redirect('main')
     else:
         return render(request, 'login.html')
@@ -44,7 +47,7 @@ def checkNPD(tupleNPD) -> tuple:
 def helperS(request):
     cookie_value = request.COOKIES.get('login_set', 'no')
     print(cookie_value)
-    if(cookie_value != "no"):
+    if(cookie_value != None and cookie_value != 'no'):
         return redirect('main')
     else:
         #theres no user logged in
@@ -105,14 +108,13 @@ def helperS(request):
     #retrieve db data and show the html
     # if not redirect to main
 
-
 #PRG method #helper url
 @csrf_protect
 def helper(request):
     #if cookies exist
     cookie_value = request.COOKIES.get('login_set', 'no')
     print(cookie_value)
-    if(cookie_value != "no"):
+    if(cookie_value != None and cookie_value != 'no'):
         return redirect('main')
     else:
         if request.method == 'POST':
@@ -138,7 +140,7 @@ def helper(request):
 def main(request):
     cookie_value = request.COOKIES.get('login_set', 'no')
     print(cookie_value)
-    if(cookie_value != 'no'):
+    if(cookie_value != None and cookie_value != 'no'):
         #render page shit
         #fetch all items from database
         #put relevant shit in context and pass to html
@@ -166,7 +168,7 @@ def main(request):
 def cart(request):
     cookie_value = request.COOKIES.get('login_set', 'no')
     print(cookie_value)
-    if(cookie_value != 'no'):
+    if(cookie_value != None and cookie_value != 'no'):
         if request.method == 'POST':
             #if theres already stuff to update
             data_received = request.POST
@@ -314,11 +316,10 @@ def cart(request):
     else:
         return redirect('login')
 
-
 def checkout(request):
     cookie_value = request.COOKIES.get('login_set', 'no')
     print(cookie_value)
-    if(cookie_value != 'no'):
+    if(cookie_value != None and cookie_value != 'no'):
         if request.method == 'POST':
             user_data = request.POST
             print(user_data)
@@ -371,7 +372,7 @@ def checkout(request):
 def admin(request):
     cookie_value = request.COOKIES.get('admin_set', 'no')
     print(cookie_value)
-    if(cookie_value != "no"):
+    if(cookie_value != None and cookie_value != 'no'):
         return redirect('dashboard')
     else:
         #if its post or not
@@ -399,7 +400,7 @@ def admin(request):
 def dashboard(request):
     cookie_value = request.COOKIES.get('admin_set', 'no')
     print(cookie_value)
-    if(cookie_value != "no"):
+    if(cookie_value != None and cookie_value != 'no'):
         #stick to page
         #fetch values
         with connection.cursor() as cursor:
@@ -411,3 +412,18 @@ def dashboard(request):
         return render(request, 'productStats.html', {'stats' : sql_data})
     else:
         redirect('admin')
+
+def profile(request):
+    #only on logout you set the cookie to no
+    cookie_value = request.COOKIES.get('login_set')
+    print(cookie_value)
+    if(cookie_value != None and cookie_value != 'no'):
+        #fetch user data
+        with connection.cursor() as cursor:
+            cursor.execute('SELECT * FROM customer WHERE customer_email = %s', (cookie_value,))
+            user_data = cursor.fetchall()
+        print(user_data)
+        return render(request, 'profile.html', {'user': user_data[0], 'order_history': None})
+    else:
+        return redirect('login')
+

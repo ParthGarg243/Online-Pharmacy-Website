@@ -372,21 +372,45 @@ INSERT INTO order_details (quantity, order_id, product_id) VALUES
 (2, 10, 9);
 
 -- Trigger to update inventory whenever an order is placed
-
 DELIMITER //
+
 CREATE TRIGGER update_inventory_after_order
-AFTER INSERT ON order_details
+AFTER INSERT ON orders
 FOR EACH ROW
 BEGIN
-	DECLARE new_product_id INT;
+    DECLARE new_order_id INT;
+    DECLARE new_product_id INT;
     DECLARE new_quantity INT;
+
+    -- Get the new order_id
+    SET new_order_id = NEW.order_id;
+
+    -- Declare handler for NOT FOUND condition
+    DECLARE done INT DEFAULT FALSE;
     
-    SELECT MAX(product_id) INTO new_product_id FROM order_details GROUP BY order_id HAVING order_id = (SELECT MAX(order_id) FROM order_details);
-    
-    SELECT quantity INTO new_quantity FROM order_details WHERE order_id = (SELECT MAX(order_id) FROM order_details) AND product_id = (SELECT MAX(product_id) FROM order_details GROUP BY order_id HAVING order_id = (SELECT MAX(order_id) FROM order_details));
-    
-    UPDATE product SET stock = stock - new_quantity WHERE product_id = new_product_id;
+    -- Declare cursor to iterate over order_details for the new order
+    DECLARE cur CURSOR FOR 
+        SELECT product_id, quantity FROM order_details WHERE order_id = new_order_id;
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    OPEN cur;
+
+    -- Loop through the cursor
+    read_loop: LOOP
+        FETCH cur INTO new_product_id, new_quantity;
+        
+        -- Check if no more rows to fetch
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+        
+        -- Update the stock for the product
+        UPDATE product SET stock = stock - new_quantity WHERE product_id = new_product_id;
+    END LOOP;
+
+    CLOSE cur;
 END//
+
 DELIMITER ;
 
 -- Trigger to automatically assign a pharmacist to an order whenever a new one is placed 
@@ -405,15 +429,10 @@ BEGIN
     ORDER BY RAND()
     LIMIT 1;
     
-    SELECT MAX(prescription_id) INTO new_prescription_id
-    FROM prescription
-    ORDER BY RAND()
-    LIMIT 1;
-    
     SELECT MAX(order_id) INTO new_order_id 
     FROM orders;
     
     INSERT INTO order_approval (order_id, prescription_id, pharmacist_id)
-    VALUES (new_order_id, new_prescription_id, new_pharmacist_id);
+    VALUES (new_order_id, 1, new_pharmacist_id);
 END//
 DELIMITER ;
