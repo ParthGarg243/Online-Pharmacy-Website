@@ -9,6 +9,12 @@ from django.shortcuts import redirect
 #use views.py for serving a page
 #for updating elements use ajax
 
+#what if i need a function to just post / update and refresh
+#then in that case you can use a form and redirect to a page that does the update in db and redirects to previous page
+#or have the same function but instead of form you do a ajax post request and then reload the page/update
+
+#for post and redirect same ajax/form works/ ajax better because no form resubmission headaches
+
 #one url one function one render
 # Create your views here.
 def login(request):
@@ -426,4 +432,25 @@ def profile(request):
         return render(request, 'profile.html', {'user': user_data[0], 'order_history': None})
     else:
         return redirect('login')
+    
 
+def update (request):
+    cookie_value = request.COOKIES.get('login_set')
+    print(cookie_value)
+    if(cookie_value != None and cookie_value != 'no'):
+        if request.method == 'POST':
+            user_data = request.POST
+            print(user_data)
+            #need to check data like during signup
+            
+            
+            #update the user data
+            with connection.cursor() as cursor:
+                cursor.execute('UPDATE customer SET first_name = %s, last_name = %s, phone_number = %s, address_line = %s, pincode = %s WHERE customer_email = %s', (user_data['fname'], user_data['lname'], user_data['phone'], user_data['address'], user_data['pin'], cookie_value))
+            
+            return redirect('profile')
+            
+        else:
+            return redirect('profile')
+    else:
+        return redirect('login')
