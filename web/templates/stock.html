@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 
-<head>
+<head>  {% load static %}
+
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" href="../static/css/stock.css">
+	<link rel="stylesheet" href="{% static 'css/stock.css' %}">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
@@ -17,14 +18,19 @@
     <nav>
       <div class="navbar">
         <div>
-          <a href="../templates/adminLogin.html" style="text-decoration:none">Sign Out</a>
+          <a href="#" style="text-decoration:none">Sign Out</a>
         </div>
         <div>
-          <a href="../templates/productStats.html" style="text-decoration:none">Product Stats</a>
+          <a href="{% url 'dashboard' %}" style="text-decoration:none">Product Stats</a>
         </div>
         <div>
-          <a href="../templates/orders.html" style="text-decoration:none">Manage Orders</a>
+          <a href="{% url 'stock' %}" style="text-decoration:none">Manage Stock</a>
         </div>
+
+        <div>
+            <a href="{% url 'approval' %}" style="text-decoration:none">Order Approval</a>
+          </div>
+
       </div>
     </nav>
 </header>
@@ -44,48 +50,39 @@
                       <tr>
                         <!-- Set columns width -->
                         <th class="text-center py-3 px-4" style="min-width: 400px;">Product Name &amp; Details</th>
-                        <th class="text-center py-3 px-4" style="width: 120px;">Quantity</th>
+                        <th class="text-center py-3 px-4" style="width: 120px;">Add</th>
                       </tr>
                     </thead>
                     <tbody>
+                      <form action = "{%url 'stock' %}" method="post">
+                        {% csrf_token %}
+
+                      {% for product in products %}
             
                       <tr>
                         <td class="p-4">
                           <div class="media align-items-center">
-                            <img src="../static/assets/eyeDrop.jpg" class="d-block ui-w-40 ui-bordered mr-4" alt="">
+                            <img src="{{product.7}}" class="d-block ui-w-40 ui-bordered mr-4" alt="">
                             <div class="media-body">
-                              <a href="#" class="d-block text-dark">Eye Drops</a>
+                              <a href="#" class="d-block text-dark">{{product.1}}</a>
                               <small>
-                                <span class="text-muted">Current Stock: </span> 100 &nbsp;
+                                <span class="text-muted">Current Stock: </span> {{product.3}} &nbsp;
                               </small>
                             </div>
                           </div>
                         </td>
-                        <td class="align-middle p-4"><input type="text" class="form-control text-center" value="2"></td>
+                        <td class="align-middle p-4"><input type="text" name = "{{product.0}}" class="form-control text-center" value="0"></td>
                       </tr>
             
-                      <tr>
-                        <td class="p-4">
-                          <div class="media align-items-center">
-                            <img src="../static/assets/ointment.jpg" class="d-block ui-w-40 ui-bordered mr-4" alt="">
-                            <div class="media-body">
-                              <a href="#" class="d-block text-dark">Analgesic Cream</a>
-                              <small>
-                                <span class="text-muted">Current Stock: </span> 50 &nbsp;
-                              </small>
-                            </div>
-                          </div>
-                        </td>
-                        <td class="align-middle p-4"><input type="text" class="form-control text-center" value="1"></td>
-                      </tr>
-            
+                      {% endfor %}
                     </tbody>
                   </table>
                 </div>
-            
+                
                 <div class="float-right">
-                  <button type="button" class="btn btn-lg btn-primary mt-2">Update Stock</button>
+                  <button type="submit" class="btn btn-lg btn-primary mt-2">Update Stock</button>
                 </div>
+              </form>
             
               </div>
           </div>

@@ -527,4 +527,32 @@ def approval(request):
         return redirect('admin')
     
 def stock(request):
-    return render(request, 'stock.html')
+    cookie_value = request.COOKIES.get('admin_set', 'no')
+    print(cookie_value)
+    if(cookie_value != None and cookie_value != 'no'):
+        if request.method == 'POST': #if updating value
+            data_received = request.POST
+            print(data_received)
+            
+            for key in data_received:
+                if key != 'csrfmiddlewaretoken':
+                    with connection.cursor() as cursor:
+                        cursor.execute('SELECT stock FROM product WHERE product_id = %s', (key,))
+                        curr_stock = cursor.fetchall()
+                        print(curr_stock[0][0])
+                        cursor.execute('UPDATE product SET stock = %s WHERE product_id = %s', (curr_stock[0][0] + int(data_received[key]), key))
+            
+            with connection.cursor() as cursor:
+                cursor.execute('SELECT * FROM product')
+                product_data = cursor.fetchall()
+            print(product_data)
+            return render(request, 'stock.html', {'products': product_data})
+        
+        else: #if just fetching
+            with connection.cursor() as cursor:
+                cursor.execute('SELECT * FROM product')
+                product_data = cursor.fetchall()
+            print(product_data)
+            return render(request, 'stock.html', {'products': product_data})
+    else:
+        return redirect('admin')
