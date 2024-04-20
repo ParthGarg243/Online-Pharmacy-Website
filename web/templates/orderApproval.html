@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="../static/css/orderApproval.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+	<title>Manage Stock</title>
+</head>
+
+<body>
+  <header>
+    <nav>
+      <div class="navbar">
+        <div>
+          <a href="#" style="text-decoration:none">Sign Out</a>
+        </div>
+        <div>
+          <a href="{% url 'dashboard' %}" style="text-decoration:none">Product Stats</a>
+        </div>
+        <div>
+          <a href="#" style="text-decoration:none">Manage Stock</a>
+        </div>
+
+        <div>
+            <a href="{% url 'approval' %}" style="text-decoration:none">Order Approval</a>
+          </div>
+
+      </div>
+    </nav>
+</header>
+
+    <h1>Approve Orders</h1>
+
+    <div class="cards-container">
+        {% for key, value in order.items %}
+
+        <div class="card">
+            <div class="title mx-auto"> Order #{{key.0}} </div>
+            <div class="main"> <span id="sub-title">
+                    <p><b>Order Details</b></p>
+                </span>
+                {% for products in value %}
+                <div class="row row-main">
+                    <div class="col-3"> <img class="img-fluid" src="../static/assets/syrup.jpg"> </div>
+                    <div class="col-6">
+                        <div class="row d-flex">
+                            <p><b>{{products.4}}</b></p>
+                        </div>
+                        <div class="row d-flex">
+                            <p class="text-muted">Quantity: {{products.0}}</p>
+                        </div>
+                    </div>
+                    <div class="col-3 d-flex justify-content-end">
+                        <p><b>${{products.5}}</b></p>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <hr>
+                <div class="total">
+                    <div class="row">
+                        <div class="col"> <b> Total:</b> </div>
+                        <div class="col d-flex justify-content-end"> <b>${{key.1}}</b> </div>
+                    </div> 
+                    <form action = "{%url 'approval'%}" method ="post">
+                        {% csrf_token %}
+                        <!--can use ajax here make a return thing and still use ajax ajax will eat that up and all you do is refresh -->
+                    <input type="txt" name="orderid" value="{{key.0}}" style="display: none;" />
+                    <button class="btn d-flex mx-auto"  type = "submit" style="background-color: #573b8a; color: white;">Approve Order</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+    </div>
+
+</body>
+
+</html>

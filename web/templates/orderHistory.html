@@ -32,51 +32,40 @@
     </div>
 
     <div class="cards-container">
-        
-        {% for curr in orders %}
+
+        {% for key, product_tuple in orders.items %}
         <div class="card">
-            <div class="title mx-auto"> Thank you for your order #{{curr.0}} </div>
+            <div class="title mx-auto"> Thank you for your order #{{key.0}} </div>
             <div class="main"> <span id="sub-title">
                     <p><b>Order Details</b></p>
                 </span>
+
+                {% for product in product_tuple %}
                 <div class="row row-main">
-                    <div class="col-3"> <img class="img-fluid" src="../static/assets/syrup.jpg"> </div>
+                    <div class="col-3"> <img class="img-fluid" src='{{product.10}}'> </div>
                     <div class="col-6">
                         <div class="row d-flex">
-                            <p><b>Cough Syrup</b></p>
+                            <p><b>{{product.4}}</b></p>
                         </div>
                         <div class="row d-flex">
-                            <p class="text-muted">Quantity: 2</p>
+                            <p class="text-muted">Quantity: {{product.0}}</p>
                         </div>
                     </div>
                     <div class="col-3 d-flex justify-content-end">
-                        <p><b>$100</b></p>
+                        <p><b>${{product.5}}</b></p>
                     </div>
                 </div>
-                <div class="row row-main">
-                    <div class="col-3"> <img class="img-fluid" src="../static/assets/tablet.jpg"> </div>
-                    <div class="col-6">
-                        <div class="row d-flex">
-                            <p><b>Pain Relief</b></p>
-                        </div>
-                        <div class="row d-flex">
-                            <p class="text-muted">Quantity: 1</p>
-                        </div>
-                    </div>
-                    <div class="col-3 d-flex justify-content-end">
-                        <p><b>$199</b></p>
-                    </div>
-                </div>
+                {% endfor %}
 
                 <hr>
                 <div class="total">
                     <div class="row">
                         <div class="col"> <b> Total:</b> </div>
-                        <div class="col d-flex justify-content-end"> <b>${{curr.5}}</b> </div>
+                        <div class="col d-flex justify-content-end"> <b>${{key.1}}</b> </div>
                     </div> 
                     <div class="row">
                         <div class="col"> <b> Status:</b> </div>
-                        <div class="col d-flex justify-content-end"> <b>{{curr.2}}</b> </div>
+                        <div class="col d-flex justify-content-end"> <b>{{key.2}}</b> </div>
                     </div> 
                     <!--<button class="btn d-flex mx-auto">Customer Support</button>-->
                     <div>

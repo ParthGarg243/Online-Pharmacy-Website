@@ -16,20 +16,24 @@
 
 <body>
     <header>
-        <nav>
-          <div class="logo">pharmacy</div>
-          <div class="navbar">
-            <div>
-              <a href="#" style="text-decoration:none">Home</a>
-            </div>
-            <div>
-              <a href="#" style="text-decoration:none">AdminFunc1</a>
-            </div>
-            <div>
-              <a href="#" style="text-decoration:none">AdminFunc2</a>
-            </div>
+      <nav>
+        <div class="navbar">
+          <div>
+            <a href="#" style="text-decoration:none">Sign Out</a>
           </div>
-        </nav>
+          <div>
+            <a href="{% url 'dashboard' %}" style="text-decoration:none">Product Stats</a>
+          </div>
+          <div>
+            <a href="#" style="text-decoration:none">Manage Stock</a>
+          </div>
+  
+          <div>
+              <a href="{% url 'approval' %}" style="text-decoration:none">Order Approval</a>
+            </div>
+  
+        </div>
+      </nav>
     </header>
 
     <h1>Product Stats</h1>

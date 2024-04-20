@@ -15,5 +15,5 @@ urlpatterns = [
     path('profile/', views.profile, name = 'profile'),
     path('update/', views.update, name = 'update'), # why not a javascript function that updates the cookie and redirects? why a post form
     path('history/', views.history, name = 'history'),
-
+    path('approval/', views.approval, name = 'approval'), #all it does is maps web/path  
  ]

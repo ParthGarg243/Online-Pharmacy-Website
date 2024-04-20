@@ -444,11 +444,74 @@ def history(request):
     cookie_value = request.COOKIES.get('login_set')
     print(cookie_value)
     if(cookie_value != None and cookie_value != 'no'):
-        #fetch user data
+        #fetch all the order id's
         with connection.cursor() as cursor:
-            cursor.execute('SELECT * FROM orders WHERE customer_email = %s', (cookie_value,))
-            order_data = cursor.fetchall()
+            cursor.execute('SELECT order_id, amount, status  FROM orders WHERE customer_email = %s', (cookie_value,))
+            order_id_data = cursor.fetchall()
+
+        print(order_id_data)
+        
+        order_data={}
+        for order_id in order_id_data:
+            with connection.cursor() as cursor:
+                cursor.execute('SELECT * FROM order_details, product WHERE order_id = %s and order_details.product_id = product.product_id', (order_id[0],))
+                order_data[(order_id[0], order_id[1], order_id[2])] = cursor.fetchall()
+
         print(order_data)
         return render(request, 'orderHistory.html', {'orders': order_data})
     else:
         return redirect('login')
+    
+def approval(request):
+    #cache check
+    cookie_value = request.COOKIES.get('admin_set', 'no')
+    print(cookie_value)
+    if(cookie_value != None and cookie_value != 'no'):
+        if request.method == 'POST':
+            #update and fetch couldve used ajax
+            data_received = request.POST
+            print(data_received)
+            #update the stock
+            with connection.cursor() as cursor:
+                cursor.execute('START TRANSACTION;')
+                
+                # Update the order status
+                cursor.execute('UPDATE orders SET status = %s WHERE order_id = %s;', ("Processing", data_received['orderid']))
+                
+                # Select pharmacist orders
+                cursor.execute('select orders.order_id, orders.amount from pharmacist, order_approval, orders where pharmacist.pharmacist_id = %s and pharmacist.pharmacist_id = order_approval.pharmacist_id and order_approval.order_id = orders.order_id and orders.status = %s', (cookie_value, "Received"))
+                
+                # Commit the transaction
+                cursor.execute('COMMIT;')
+
+                # Fetch the pharmacist orders
+                pharmacist_orders = cursor.fetchall()
+
+            print(pharmacist_orders)
+            order_data={}
+            for order_id in pharmacist_orders:
+                with connection.cursor() as cursor:
+                    cursor.execute('SELECT * FROM order_details, product WHERE order_id = %s and order_details.product_id = product.product_id', (order_id[0],))
+                    order_data[(order_id[0], order_id[1])] = cursor.fetchall()
+
+            print(order_data)
+            return render(request, 'orderApproval.html', {'order': order_data})
+                   
+        else:
+            #just fetch
+            with connection.cursor() as cursor:
+                cursor.execute('select orders.order_id, orders.amount from pharmacist, order_approval, orders where pharmacist.pharmacist_id = %s and pharmacist.pharmacist_id = order_approval.pharmacist_id and order_approval.order_id = orders.order_id and orders.status = %s', (cookie_value, "Received"))
+                pharmacist_orders = cursor.fetchall()
+            print(pharmacist_orders)
+
+            #again go through each order and make a dictionary
+            order_data={}
+            for order_id in pharmacist_orders:
+                with connection.cursor() as cursor:
+                    cursor.execute('SELECT * FROM order_details, product WHERE order_id = %s and order_details.product_id = product.product_id', (order_id[0],))
+                    order_data[(order_id[0], order_id[1])] = cursor.fetchall()
+
+            print(order_data)
+            return render(request, 'orderApproval.html', {'order': order_data})
+    else:
+        return redirect('admin')
