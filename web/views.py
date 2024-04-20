@@ -190,7 +190,9 @@ def cart(request):
                     newQty = cart_data_product[0][0] + 1
 
                     with connection.cursor() as cursor:
+                        cursor.execute('START TRANSACTION;')
                         cursor.execute('UPDATE cart SET quantity = %s WHERE product_id = %s and customer_email = %s ', (newQty, data_received['pid'][0], cookie_value, ))
+                        cursor.execute('COMMIT;')
                 elif(data_received['action'] == 'remove'):
                      #update value of stock
                     newStock = curr_product_stock[0][0] + 1
@@ -207,10 +209,14 @@ def cart(request):
                     newQty = cart_data_product[0][0] - 1
                     if newQty == 0:
                         with connection.cursor() as cursor:
+                            cursor.execute('START TRANSACTION;')
                             cursor.execute('DELETE FROM cart WHERE product_id = %s and customer_email = %s', (data_received['pid'][0], cookie_value, ))
+                            cursor.execute('COMMIT;')
                     else:
                         with connection.cursor() as cursor:
+                            cursor.execute('START TRANSACTION;')
                             cursor.execute('UPDATE cart SET quantity = %s WHERE product_id = %s and customer_email = %s ', (newQty, data_received['pid'][0], cookie_value, ))
+                            cursor.exectue('COMMIT;')
                 elif(curr_product_stock[0][0] == 0 and data_received['action'] == 'add'): #if stock is not there
                     #then fetch
                     err = True
@@ -259,11 +265,14 @@ def cart(request):
                     print(int(data_received['field1'][0]))
 
                     with connection.cursor() as cursor:
+                        cursor.execute('START TRANSACTION')
                         cursor.execute('UPDATE cart SET quantity = %s WHERE product_id = %s and customer_email = %s ', (currQty, data_received['field1'][0], cookie_value, ))
+                        cursor.execute('COMMIT;')
                 else: #fresh insert
                     with connection.cursor() as cursor:
+                        cursor.execute('START TRANSACTION')
                         cursor.execute('INSERT INTO cart (quantity, customer_email, product_id) VALUES (1, %s, %s)', (cookie_value, data_received['field1'][0],))        
-
+                        cursor.execute('COMMIT;')
                 #update stock
     
                 with connection.cursor() as cursor:
@@ -479,12 +488,13 @@ def approval(request):
                 cursor.execute('UPDATE orders SET status = %s WHERE order_id = %s;', ("Processing", data_received['orderid']))
                 
                 # Select pharmacist orders
-                cursor.execute('select orders.order_id, orders.amount from pharmacist, order_approval, orders where pharmacist.pharmacist_id = %s and pharmacist.pharmacist_id = order_approval.pharmacist_id and order_approval.order_id = orders.order_id and orders.status = %s', (cookie_value, "Received"))
                 
                 # Commit the transaction
                 cursor.execute('COMMIT;')
 
                 # Fetch the pharmacist orders
+            with connection.cursor() as cursor:
+                cursor.execute('select orders.order_id, orders.amount from pharmacist, order_approval, orders where pharmacist.pharmacist_id = %s and pharmacist.pharmacist_id = order_approval.pharmacist_id and order_approval.order_id = orders.order_id and orders.status = %s', (cookie_value, "Received"))
                 pharmacist_orders = cursor.fetchall()
 
             print(pharmacist_orders)
