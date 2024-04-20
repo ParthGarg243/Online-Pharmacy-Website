@@ -525,3 +525,6 @@ def approval(request):
             return render(request, 'orderApproval.html', {'order': order_data})
     else:
         return redirect('admin')
+    
+def stock(request):
+    return render(request, 'stock.html')
