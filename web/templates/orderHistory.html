@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+
+    <title>Order History</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'css/orderHistory.css'%}">
+</head>
+<body>
+    <header>
+        <nav>
+          <div class="logo">pharmacy</div>
+          <div class="navbar">
+            <div>
+              <a href="{% url 'main'%}" style="text-decoration:none">Home</a>
+            </div>
+            <div>
+              <a href="{% url 'cart'%}" style="text-decoration:none">Cart</a>
+            </div>
+            <div>
+              <a href="{% url 'profile'%}" style="text-decoration:none">Profile</a>
+            </div>
+          </div>
+        </nav>
+    </header>
+
+    <div class="order-history-header">
+        <h1>Order History</h1>
+    </div>
+
+    <div class="cards-container">
+        
+        {% for curr in orders %}
+        <div class="card">
+            <div class="title mx-auto"> Thank you for your order #{{curr.0}} </div>
+            <div class="main"> <span id="sub-title">
+                    <p><b>Order Details</b></p>
+                </span>
+                <div class="row row-main">
+                    <div class="col-3"> <img class="img-fluid" src="../static/assets/syrup.jpg"> </div>
+                    <div class="col-6">
+                        <div class="row d-flex">
+                            <p><b>Cough Syrup</b></p>
+                        </div>
+                        <div class="row d-flex">
+                            <p class="text-muted">Quantity: 2</p>
+                        </div>
+                    </div>
+                    <div class="col-3 d-flex justify-content-end">
+                        <p><b>$100</b></p>
+                    </div>
+                </div>
+                <div class="row row-main">
+                    <div class="col-3"> <img class="img-fluid" src="../static/assets/tablet.jpg"> </div>
+                    <div class="col-6">
+                        <div class="row d-flex">
+                            <p><b>Pain Relief</b></p>
+                        </div>
+                        <div class="row d-flex">
+                            <p class="text-muted">Quantity: 1</p>
+                        </div>
+                    </div>
+                    <div class="col-3 d-flex justify-content-end">
+                        <p><b>$199</b></p>
+                    </div>
+                </div>
+
+                <hr>
+                <div class="total">
+                    <div class="row">
+                        <div class="col"> <b> Total:</b> </div>
+                        <div class="col d-flex justify-content-end"> <b>${{curr.5}}</b> </div>
+                    </div> 
+                    <div class="row">
+                        <div class="col"> <b> Status:</b> </div>
+                        <div class="col d-flex justify-content-end"> <b>{{curr.2}}</b> </div>
+                    </div> 
+                    <!--<button class="btn d-flex mx-auto">Customer Support</button>-->
+                    <div>
+                        <br>
+                        <p>
+
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+    </div>
+
+</body>
+</html>

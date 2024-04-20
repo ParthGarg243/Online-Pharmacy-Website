@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="../static/css/stock.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+	<title>Manage Stock</title>
+</head>
+
+<body>
+  <header>
+    <nav>
+      <div class="navbar">
+        <div>
+          <a href="../templates/adminLogin.html" style="text-decoration:none">Sign Out</a>
+        </div>
+        <div>
+          <a href="../templates/productStats.html" style="text-decoration:none">Product Stats</a>
+        </div>
+        <div>
+          <a href="../templates/orders.html" style="text-decoration:none">Manage Orders</a>
+        </div>
+      </div>
+    </nav>
+</header>
+
+    <h1>Update Stock</h1>
+
+    <div class="container px-3 my-5 clearfix">
+        <!-- Shopping cart table -->
+        <div class="card">
+            <div class="card-header">
+                <h2>Update Stock</h2>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-bordered m-0">
+                    <thead>
+                      <tr>
+                        <!-- Set columns width -->
+                        <th class="text-center py-3 px-4" style="min-width: 400px;">Product Name &amp; Details</th>
+                        <th class="text-center py-3 px-4" style="width: 120px;">Quantity</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+            
+                      <tr>
+                        <td class="p-4">
+                          <div class="media align-items-center">
+                            <img src="../static/assets/eyeDrop.jpg" class="d-block ui-w-40 ui-bordered mr-4" alt="">
+                            <div class="media-body">
+                              <a href="#" class="d-block text-dark">Eye Drops</a>
+                              <small>
+                                <span class="text-muted">Current Stock: </span> 100 &nbsp;
+                              </small>
+                            </div>
+                          </div>
+                        </td>
+                        <td class="align-middle p-4"><input type="text" class="form-control text-center" value="2"></td>
+                      </tr>
+            
+                      <tr>
+                        <td class="p-4">
+                          <div class="media align-items-center">
+                            <img src="../static/assets/ointment.jpg" class="d-block ui-w-40 ui-bordered mr-4" alt="">
+                            <div class="media-body">
+                              <a href="#" class="d-block text-dark">Analgesic Cream</a>
+                              <small>
+                                <span class="text-muted">Current Stock: </span> 50 &nbsp;
+                              </small>
+                            </div>
+                          </div>
+                        </td>
+                        <td class="align-middle p-4"><input type="text" class="form-control text-center" value="1"></td>
+                      </tr>
+            
+                    </tbody>
+                  </table>
+                </div>
+            
+                <div class="float-right">
+                  <button type="button" class="btn btn-lg btn-primary mt-2">Update Stock</button>
+                </div>
+            
+              </div>
+          </div>
+      </div>
+</body>
+
+</html>

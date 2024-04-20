@@ -12,14 +12,14 @@
 		<input type="checkbox" id="chk" aria-hidden="true">
 
 			<div class="signup" style="display: hidden">
-				<form form action="/" method="post">
+				<form form action="{%url 'helperS' %}" method="post">
 					{% csrf_token %}
 				
                     <label class="signup-text" for="chk" aria-hidden="true">Sign up</label>
-                    <input type="text" name="txt" placeholder="Name" required="">
+                    <input type="text" name="fname" placeholder="First Name" required="">                    
+					<input type="text" name="lname" placeholder="Last Name" required="">
                     <input type="email" name="email" placeholder="Email" required="">
                     <input type="password" name="pswd" placeholder="Password" required="">
-					<p>{{my_list}}</p>
                     <input type="tel" name="phone" placeholder="Phone number" required="">
                     <input type="text" name="address" placeholder="Address" required="">
 					<input type="text" name="pincode" placeholder="Pin code" required="">
@@ -41,3 +41,39 @@
 	</div>
 </body>
 </html>
+<!--
+	
+	
+<script>
+	window.onload = function() {
+		// Get the form element
+		var form = document.getElementById('myForm');
+	
+		// Attach an event listener to the form's submit event
+		form.addEventListener('submit', function(event) {
+			// Get form fields
+			var nameInput = document.getElementById('name');
+			var emailInput = document.getElementById('email');
+	
+			// Check if name is empty
+			if (nameInput.value.trim() === '') {
+				alert('Please enter your name');
+				// Prevent form submission
+				event.preventDefault();
+				return;
+			}
+	
+			// Check if email is valid
+			var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+			if (!emailRegex.test(emailInput.value)) {
+				alert('Please enter a valid email address');
+				// Prevent form submission
+				event.preventDefault();
+				return;
+			}
+	
+			// If validation passes, the form will be submitted
+		});
+	};
+	</script>
+-->

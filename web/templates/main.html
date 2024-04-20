@@ -68,7 +68,7 @@
                 </div>
                 <div class="product-price-btn">
                     <p><span>{{value.2}}</span>$</p>
-                    <form method="post" action="{%url 'logout' %}">
+                    <form method="post" action="{%url 'cart' %}">
                         {% csrf_token %}
                         <input type="hidden" name="field1" value="{{key}}">
                         <button type="submit">add to cart</button>

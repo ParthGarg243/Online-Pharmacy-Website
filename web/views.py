@@ -67,37 +67,22 @@ def helperS(request):
             print(len(sql_data))
             #Trigger 1
 
-            checkTuple = (data_received['phone'], data_received['pincode'], data_received['dob'])
-            checkResult = checkNPD(checkTuple)
-            if(checkResult[0] and checkResult[1] and checkResult[2] and len(sql_data) == 0):
-                with connection.cursor() as cursor:
-                    #insert the data into table
-                    cursor.execute('INSERT INTO customer (customer_email, customer_password, first_name, last_name, phone_number, date_of_birth, gender, membership, address_line, pincode) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)', 
-                    (data_received['email'], data_received['pswd'], data_received['fName'], data_received['lName'], data_received['phone'], data_received['dob'], 'M', 'N', data_received['address'], data_received['pincode'])) 
-                    
-                    #create cookie
-
-                    #redirect
-                    response = redirect('main')
-                    # Set the cookie on the response object
-                    response.set_cookie('login_set', data_received['email'], expires='Thu, 31 Dec 2024 23:59:59 GMT', path='/')
-                    # Return the response
-                    return response
-            else:
-                #create a dictionary where you have to check for the individual things
-                context = {}
-                if not checkResult[0]:
-                    context['number'] = "This is a invalid phone number!"
-                if not checkResult[1]:
-                    context['pin'] = "This is a invalid pin!"
-                if not checkResult[2]:
-                    context['dob'] = "You are below 18!"
-                if not len(sql_data) == 0:
-                    context['my_list', "This email is already in use!"]
-                return render(request, 'login.html', context)
+            with connection.cursor() as cursor:
+                #insert the data into table
+                cursor.execute('START TRANSACTION; INSERT INTO customer (customer_email, customer_password, first_name, last_name, phone_number, date_of_birth, gender, membership, address_line, pincode) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s); COMMIT;', 
+                (data_received['email'], data_received['pswd'], data_received['fname'], data_received['lname'], data_received['phone'], data_received['dob'], 'M', 'N', data_received['address'], data_received['pincode'])) 
+                
+                #create cooki
+                #redirect
+                response = redirect('main')
+                # Set the cookie on the response object
+                response.set_cookie('login_set', data_received['email'], expires='Thu, 31 Dec 2024 23:59:59 GMT', path='/')
+                # Return the response
+                return response
+            #can use ajax instead of this so that you dont have to refresh the page better for security as well 
             
         else:
-            return redirect('user')
+            return redirect('main')
 
         
         
@@ -433,7 +418,6 @@ def profile(request):
     else:
         return redirect('login')
     
-
 def update (request):
     cookie_value = request.COOKIES.get('login_set')
     print(cookie_value)
@@ -442,15 +426,29 @@ def update (request):
             user_data = request.POST
             print(user_data)
             #need to check data like during signup
-            
+
             
             #update the user data
             with connection.cursor() as cursor:
-                cursor.execute('UPDATE customer SET first_name = %s, last_name = %s, phone_number = %s, address_line = %s, pincode = %s WHERE customer_email = %s', (user_data['fname'], user_data['lname'], user_data['phone'], user_data['address'], user_data['pin'], cookie_value))
+                cursor.execute('START TRANSACTION; UPDATE customer SET first_name = %s, last_name = %s, phone_number = %s, address_line = %s, pincode = %s WHERE customer_email = %s; COMMIT;', (user_data['fname'], user_data['lname'], user_data['phone'], user_data['address'], user_data['pin'], cookie_value))
             
             return redirect('profile')
             
         else:
             return redirect('profile')
+    else:
+        return redirect('login')
+    
+#only a get request
+def history(request):
+    cookie_value = request.COOKIES.get('login_set')
+    print(cookie_value)
+    if(cookie_value != None and cookie_value != 'no'):
+        #fetch user data
+        with connection.cursor() as cursor:
+            cursor.execute('SELECT * FROM orders WHERE customer_email = %s', (cookie_value,))
+            order_data = cursor.fetchall()
+        print(order_data)
+        return render(request, 'orderHistory.html', {'orders': order_data})
     else:
         return redirect('login')
