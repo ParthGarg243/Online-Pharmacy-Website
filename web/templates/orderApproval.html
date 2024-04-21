@@ -17,7 +17,7 @@
     <nav>
       <div class="navbar">
         <div>
-          <a href="#" style="text-decoration:none">Sign Out</a>
+          <a href="#" style="text-decoration:none" id = "soutbutton">Sign Out</a>
         </div>
         <div>
           <a href="{% url 'dashboard' %}" style="text-decoration:none">Product Stats</a>
@@ -83,3 +83,15 @@
 </body>
 
 </html>
+
+<script>
+    // Function to handle button click event
+  document.getElementById("soutbutton").onclick = function() {
+      // Set the cookie value
+      document.cookie = "admin_set=no; path=/";
+  
+      // Redirect the user to a desired page
+      window.location.href = "{% url 'admin' %}";
+  };
+  
+  </script>
