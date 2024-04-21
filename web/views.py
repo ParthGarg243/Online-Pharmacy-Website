@@ -335,15 +335,17 @@ def checkout(request):
             
             #check for lock
             with connection.cursor() as cursor:
-                cursor.execute('SELECT w FROM lock_stock WHERE id = %s', (0,))
+                cursor.execute('SELECT w FROM lock_stock WHERE id = %s', (1,))
                 write = cursor.fetchall()
-            
-            if write[0][0] != 0: #if someones updating the stock w-w case
+            print("yabba")
+            print(write)
+            err = False
+            if write[0][0] != '0': #if someones updating the stock w-w case
                 redirect('main')
             else:
                 #acquire lock
                 with connection.cursor() as cursor:
-                    cursor.execute('UPDATE lock_stock SET w = 1 WHERE id = %s', (0,))
+                    cursor.execute('UPDATE lock_stock SET w = 1 WHERE id = %s', (1,))
                 #perform read
                 #check for out of stock and remove that from cart and redirect back
                 for i in range(len(pids)):
@@ -354,7 +356,6 @@ def checkout(request):
                         stock_data = cursor.fetchall()
 
                 errTuple = []
-                err = False
                 print(stock_data)
                 if int(qtys[i]) > int(stock_data[0][0]):
                     #remove from cart
@@ -365,7 +366,7 @@ def checkout(request):
                 
                 #leave lock
                 with connection.cursor() as cursor:
-                    cursor.execute('UPDATE lock_stock SET w = 0 WHERE id = %s', (0,))
+                    cursor.execute('UPDATE lock_stock SET w = 0 WHERE id = %s', (1,))
             #---- write case can iignore
             if err:
                  #i need names
@@ -525,18 +526,39 @@ def history(request):
     print(cookie_value)
     if(cookie_value != None and cookie_value != 'no'):
         #fetch all the order id's
+
         with connection.cursor() as cursor:
             cursor.execute('SELECT order_id, amount, status  FROM orders WHERE customer_email = %s', (cookie_value,))
             order_id_data = cursor.fetchall()
 
+        print("orderiddd")
         print(order_id_data)
         
         order_data={}
         for order_id in order_id_data:
+            #check for write lock acuire lock before user reads else redirect to profile even if one is bad
             with connection.cursor() as cursor:
-                cursor.execute('SELECT * FROM order_details, product WHERE order_id = %s and order_details.product_id = product.product_id', (order_id[0],))
-                order_data[(order_id[0], order_id[1], order_id[2])] = cursor.fetchall()
+                cursor.execute('SELECT w FROM lock_order WHERE order_id = %s', (order_id[0],))
+                write = cursor.fetchall()
+            print("write")
+            print(write)
+            if write[0][0] != 0: #if someones updating the status 
+                return redirect('profile')
+            else:
+                #acquire lock
+                with connection.cursor() as cursor:
+                    cursor.execute('UPDATE lock_order SET r = 1 WHERE order_id = %s', (order_id[0],))
+               
+                with connection.cursor() as cursor:
+                    cursor.execute('START TRANSACTION;')
+                    cursor.execute('SELECT * FROM order_details, product WHERE order_id = %s and order_details.product_id = product.product_id; ', (order_id[0],))
+                    order_data[(order_id[0], order_id[1], order_id[2])] = cursor.fetchall()
+                    cursor.execute('COMMIT;')
 
+                #release lock
+                with connection.cursor() as cursor:
+                    cursor.execute('UPDATE lock_order SET r = 0 WHERE order_id = %s', (order_id[0],))
+        print()
         print(order_data)
         return render(request, 'orderHistory.html', {'orders': order_data})
     else:
@@ -551,6 +573,10 @@ def approval(request):
             #update and fetch couldve used ajax
             data_received = request.POST
             print(data_received)
+            #acquire lock
+            with connection.cursor() as cursor:
+                cursor.execute('UPDATE lock_order SET w = 1 WHERE order_id = %s', (data_received['orderid'], ))
+
             #update the stock
             with connection.cursor() as cursor:
                 cursor.execute('START TRANSACTION;')
@@ -568,12 +594,17 @@ def approval(request):
                 cursor.execute('select orders.order_id, orders.amount from pharmacist, order_approval, orders where pharmacist.pharmacist_id = %s and pharmacist.pharmacist_id = order_approval.pharmacist_id and order_approval.order_id = orders.order_id and orders.status = %s', (cookie_value, "Received"))
                 pharmacist_orders = cursor.fetchall()
 
+
             print(pharmacist_orders)
             order_data={}
             for order_id in pharmacist_orders:
                 with connection.cursor() as cursor:
                     cursor.execute('SELECT * FROM order_details, product WHERE order_id = %s and order_details.product_id = product.product_id', (order_id[0],))
                     order_data[(order_id[0], order_id[1])] = cursor.fetchall()
+
+            #release lock
+            with connection.cursor() as cursor:
+                cursor.execute('UPDATE lock_order SET w = 0 WHERE order_id = %s', (data_received['orderid'], ))
 
             print(order_data)
             return render(request, 'orderApproval.html', {'order': order_data})
@@ -609,7 +640,7 @@ def stock(request):
                 if key != 'csrfmiddlewaretoken':
                     #acquire lock
                     with connection.cursor() as cursor:
-                        cursor.execute('UPDATE lock_stock SET w = 1 WHERE id = %s', (0))
+                        cursor.execute('UPDATE lock_stock SET w = 1 WHERE id = %s', (1))
                     #do this
                     with connection.cursor() as cursor:
                         cursor.execute('START TRANSACTION;')
@@ -620,7 +651,7 @@ def stock(request):
                         cursor.execute('COMMIT;')
                     #release lock
                     with connection.cursor() as cursor:
-                        cursor.execute('UPDATE lock_stock SET w = 0 WHERE id = %s', (0))
+                        cursor.execute('UPDATE lock_stock SET w = 0 WHERE id = %s', (1, ))
 
             with connection.cursor() as cursor:
                 cursor.execute('SELECT * FROM product')

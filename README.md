@@ -17,7 +17,6 @@ adding profile pic
 adding new product
 can fix cart update into ajax and profile update as well and add to new menu
 infact everything so as to avoid form submission re error
-broker trigger - manually updating stock items
 Fix update details check data
 fix signup error js
 

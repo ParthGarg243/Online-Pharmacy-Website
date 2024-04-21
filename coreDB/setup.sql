@@ -397,7 +397,23 @@ BEGIN
 END//
 DELIMITER ;
 
-/* broken trigger
+-- second trigger
+DELIMITER //
+CREATE TRIGGER new_lock_row
+AFTER INSERT ON orders
+FOR EACH ROW
+BEGIN
+    DECLARE new_order_id INT;
+
+    SELECT MAX(order_id) INTO new_order_id 
+    FROM orders;
+    
+    INSERT INTO lock_order (order_id, r, w)
+    VALUES (new_order_id, 0, 0);
+END//
+DELIMITER ;
+
+/*
 SET @o_id = -1;
 
 DELIMITER //
@@ -445,3 +461,33 @@ BEGIN
 END //
 DELIMITER ;
 */
+
+
+CREATE TABLE lock_stock (
+	id INT PRIMARY KEY NOT NULL,
+	r BOOLEAN DEFAULT FALSE,
+	w BOOLEAN DEFAULT FALSE
+);
+
+INSERT INTO lock_stock (id, r, w) VALUES
+(1, False, False);
+
+-- need to check only for row lock, no use of table lock
+CREATE TABLE lock_order (
+	order_id INT PRIMARY KEY NOT NULL,
+	r BOOLEAN DEFAULT FALSE,
+	w BOOLEAN DEFAULT FALSE,
+	FOREIGN KEY (order_id) REFERENCES orders(order_id)
+);
+
+INSERT INTO lock_order (order_id, r, w) VALUES
+(1, False, False),
+(2, False, False),
+(3, False, False),
+(4, False, False),
+(5, False, False),
+(6, False, False),
+(7, False, False),
+(8, False, False),
+(9, False, False),
+(10, False, False);
