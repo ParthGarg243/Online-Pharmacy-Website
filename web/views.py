@@ -332,23 +332,41 @@ def checkout(request):
 
             print(pids)
             print(qtys)
-
-            #check for out of stock and remove that from cart and redirect back
-            for i in range(len(pids)):
+            
+            #check for lock
+            with connection.cursor() as cursor:
+                cursor.execute('SELECT w FROM lock_stock WHERE id = %s', (0,))
+                write = cursor.fetchall()
+            
+            if write[0][0] != 0: #if someones updating the stock w-w case
+                redirect('main')
+            else:
+                #acquire lock
                 with connection.cursor() as cursor:
-                    cursor.execute('SELECT stock FROM product WHERE product_id = %s', (pids[i],))
-                    stock_data = cursor.fetchall()
-        
-            errTuple = []
-            err = False
-            print(stock_data)
-            if int(qtys[i]) > int(stock_data[0][0]):
-                #remove from cart
-                err = True
-                with connection.cursor() as cursor:
-                    cursor.execute('DELETE FROM cart WHERE customer_email = %s and product_id = %s', (cookie_value, pids[i]))
-                errTuple.append(pids[i])   
+                    cursor.execute('UPDATE lock_stock SET w = 1 WHERE id = %s', (0,))
+                #perform read
+                #check for out of stock and remove that from cart and redirect back
+                for i in range(len(pids)):
+                    with connection.cursor() as cursor:
+                        cursor.execute('BEGIN TRANSACTION;')
+                        cursor.execute('SELECT stock FROM product WHERE product_id = %s;', (pids[i],))
+                        cursor.execute('COMMIT;')
+                        stock_data = cursor.fetchall()
 
+                errTuple = []
+                err = False
+                print(stock_data)
+                if int(qtys[i]) > int(stock_data[0][0]):
+                    #remove from cart
+                    err = True
+                    with connection.cursor() as cursor:
+                        cursor.execute('DELETE FROM cart WHERE customer_email = %s and product_id = %s', (cookie_value, pids[i]))
+                    errTuple.append(pids[i])   
+                
+                #leave lock
+                with connection.cursor() as cursor:
+                    cursor.execute('UPDATE lock_stock SET w = 0 WHERE id = %s', (0,))
+            #---- write case can iignore
             if err:
                  #i need names
                 n = len(errTuple)
@@ -372,10 +390,20 @@ def checkout(request):
                 #request.session['error'] = f"{errSTR}: Out of stock" - lousy alternative
             else:
             #find the new new boy in the town
+            #check if product table is empty. r  if its writing
+            #read while writing 
+            # w if its reading and w if its w - chekcout vs updating stck. w while reading is not fine
+                with connection.cursor() as cursor:
+                    cursor.execute('SELECT w FROM lock_stock WHERE id = %s', (0,))
+                    write = cursor.fetchall()
+                '''
+                if write[0][0] != 0: #if someones updating the stock w-w case
+                    return redirect("main")                       
+                else:'''
                 with connection.cursor() as cursor:
                     cursor.execute('SELECT max(order_id) FROM orders')
                     order_data = cursor.fetchall()
-                
+
                 latestCount = order_data[0][0] + 1
                 print(latestCount)
 
@@ -393,7 +421,6 @@ def checkout(request):
 
                     with connection.cursor() as cursor:
                         cursor.execute('INSERT INTO order_details (quantity, order_id, product_id) VALUES (%s, %s, %s)', (currQty, latestCount, currProduct))        
-                        #updating stock
                         cursor.execute('UPDATE product SET stock = stock - %s WHERE product_id = %s', (currQty, currProduct))
 
                 #delete from cart
@@ -401,6 +428,9 @@ def checkout(request):
                     cursor.execute('DELETE FROM cart WHERE customer_email = %s', (cookie_value,))
 
                 #should fix resubmission form
+
+                #dip lock
+
 
                 return render(request, 'thankyou.html')
         else:
@@ -577,12 +607,19 @@ def stock(request):
             
             for key in data_received:
                 if key != 'csrfmiddlewaretoken':
+                    #acquire lock
+                    with connection.cursor() as cursor:
+                        cursor.execute('UPDATE lock_stock SET w = 1 WHERE id = %s', (0))
+                    #do this
                     with connection.cursor() as cursor:
                         cursor.execute('SELECT stock FROM product WHERE product_id = %s', (key,))
                         curr_stock = cursor.fetchall()
                         print(curr_stock[0][0])
                         cursor.execute('UPDATE product SET stock = %s WHERE product_id = %s', (curr_stock[0][0] + int(data_received[key]), key))
-            
+                    #release lock
+                        with connection.cursor() as cursor:
+                            cursor.execute('UPDATE lock_stock SET w = 0 WHERE id = %s', (0))
+
             with connection.cursor() as cursor:
                 cursor.execute('SELECT * FROM product')
                 product_data = cursor.fetchall()
