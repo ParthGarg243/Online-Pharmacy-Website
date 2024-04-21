@@ -612,13 +612,15 @@ def stock(request):
                         cursor.execute('UPDATE lock_stock SET w = 1 WHERE id = %s', (0))
                     #do this
                     with connection.cursor() as cursor:
-                        cursor.execute('SELECT stock FROM product WHERE product_id = %s', (key,))
+                        cursor.execute('START TRANSACTION;')
+                        cursor.execute('SELECT stock FROM product WHERE product_id = %s;', (key,))
                         curr_stock = cursor.fetchall()
                         print(curr_stock[0][0])
-                        cursor.execute('UPDATE product SET stock = %s WHERE product_id = %s', (curr_stock[0][0] + int(data_received[key]), key))
+                        cursor.execute('UPDATE product SET stock = %s WHERE product_id = %s;', (curr_stock[0][0] + int(data_received[key]), key))
+                        cursor.execute('COMMIT;')
                     #release lock
-                        with connection.cursor() as cursor:
-                            cursor.execute('UPDATE lock_stock SET w = 0 WHERE id = %s', (0))
+                    with connection.cursor() as cursor:
+                        cursor.execute('UPDATE lock_stock SET w = 0 WHERE id = %s', (0))
 
             with connection.cursor() as cursor:
                 cursor.execute('SELECT * FROM product')
