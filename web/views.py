@@ -15,6 +15,11 @@ from django.shortcuts import redirect
 
 #for post and redirect same ajax/form works/ ajax better because no form resubmission headaches
 
+#serving a page - python
+#a form - html
+#post and refresh - ajax
+#post and redirect - html
+
 #one url one function one render
 # Create your views here.
 def login(request):
@@ -128,6 +133,7 @@ def helper(request):
         else:
             return redirect('login')
 
+#check for 5 limit update
 def main(request):
     cookie_value = request.COOKIES.get('login_set', 'no')
     print(cookie_value)
@@ -136,7 +142,7 @@ def main(request):
         #fetch all items from database
         #put relevant shit in context and pass to html
         with connection.cursor() as cursor:
-            cursor.execute('SELECT * FROM product WHERE stock != 0')
+            cursor.execute('SELECT * FROM product WHERE stock >= 0') # out of stock if less than 5
             sql_data = cursor.fetchall()
 
         with connection.cursor() as cursor:
@@ -162,43 +168,33 @@ def cart(request):
     if(cookie_value != None and cookie_value != 'no'):
         if request.method == 'POST':
             #if theres already stuff to update
+            #need to check if 5 limit is reached
             data_received = request.POST
             print(data_received)
-            if 'action' in data_received: #if its about updating value increment decrement
+            if 'action' in data_received: #if its about updating value increment decrement 
                 #check
                 print(data_received['pid'])
-                with connection.cursor() as cursor:
-                    cursor.execute('SELECT stock, name FROM product WHERE product_id = %s', (data_received['pid'][0],))
-                    curr_product_stock = cursor.fetchall() 
-                print(curr_product_stock)
                 #update inventory and stock
                 err = False
-                if (curr_product_stock[0][0] > 0 and data_received['action'] == 'add'): #if stock is there
-                    #update value of stock
-                    print(curr_product_stock)
-                    newStock = curr_product_stock[0][0] - 1
-
-                    with connection.cursor() as cursor:
-                        cursor.execute('UPDATE product SET stock = %s WHERE product_id = %s', (newStock, data_received['pid'][0],))
-                    #update value of cart
+                if (data_received['action'] == 'add'): #if stock is there                    
+                   #update value of cart
                     with connection.cursor() as cursor:
                         cursor.execute('SELECT * FROM cart, product WHERE customer_email = %s and cart.product_id = product.product_id and cart.product_id = %s', (cookie_value, data_received['pid'][0],))
                         cart_data_product = cursor.fetchall()
-                
+
                     print(cart_data_product)
-                
+                    
                     newQty = cart_data_product[0][0] + 1
 
-                    with connection.cursor() as cursor:
-                        cursor.execute('START TRANSACTION;')
-                        cursor.execute('UPDATE cart SET quantity = %s WHERE product_id = %s and customer_email = %s ', (newQty, data_received['pid'][0], cookie_value, ))
-                        cursor.execute('COMMIT;')
+                    if newQty <= 5:
+                        with connection.cursor() as cursor:
+                            cursor.execute('START TRANSACTION;')
+                            cursor.execute('UPDATE cart SET quantity = %s WHERE product_id = %s and customer_email = %s ', (newQty, data_received['pid'][0], cookie_value, ))
+                            cursor.execute('COMMIT;')
+                    else:
+                        err = True
+                        errName = cart_data_product[0][4]
                 elif(data_received['action'] == 'remove'):
-                     #update value of stock
-                    newStock = curr_product_stock[0][0] + 1
-
-                    with connection.cursor() as cursor:
-                        cursor.execute('UPDATE product SET stock = %s WHERE product_id = %s', (newStock, data_received['pid'][0],))
                     #update value of cart
                     with connection.cursor() as cursor:
                         cursor.execute('SELECT * FROM cart, product WHERE customer_email = %s and cart.product_id = product.product_id and cart.product_id = %s', (cookie_value, data_received['pid'][0],))
@@ -216,10 +212,7 @@ def cart(request):
                         with connection.cursor() as cursor:
                             cursor.execute('START TRANSACTION;')
                             cursor.execute('UPDATE cart SET quantity = %s WHERE product_id = %s and customer_email = %s ', (newQty, data_received['pid'][0], cookie_value, ))
-                            cursor.exectue('COMMIT;')
-                elif(curr_product_stock[0][0] == 0 and data_received['action'] == 'add'): #if stock is not there
-                    #then fetch
-                    err = True
+                            cursor.execute('COMMIT;')
                 
                 with connection.cursor() as cursor:
                     cursor.execute('SELECT * FROM cart, product WHERE customer_email = %s and cart.product_id = product.product_id', (cookie_value,))
@@ -234,7 +227,7 @@ def cart(request):
                 #then render#
                 if err: # need  to fix a appropriate error message for out of stock
                     #append to the item and uhhhhhh yeah so if it matches pid and then append it to the thing and thang
-                    return render(request, "cart.html", {'cart': cart_all, 'total': total, 'total_delivery': total+5, 'error': curr_product_stock[0][1] + ' is out of stock!'})
+                    return render(request, "cart.html", {'cart': cart_all, 'total': total, 'total_delivery': total+5, 'error': errName + ': Maximum order quantity is 5!'})
                 else:
                     return render(request, "cart.html", {'cart': cart_all, 'total': total, 'total_delivery': total+5})
         
@@ -257,33 +250,25 @@ def cart(request):
                     sql_cart_data = cursor.fetchall()
                 
                 print(sql_cart_data)
-                
+                err = False
                 if(len(sql_cart_data) == 1): #if its to be updated
                     currQty = sql_cart_data[0][0] + 1
 
                     #print(data_received, sql_customer)
                     print(int(data_received['field1'][0]))
-
-                    with connection.cursor() as cursor:
-                        cursor.execute('START TRANSACTION')
-                        cursor.execute('UPDATE cart SET quantity = %s WHERE product_id = %s and customer_email = %s ', (currQty, data_received['field1'][0], cookie_value, ))
-                        cursor.execute('COMMIT;')
+                    if currQty <= 5:
+                        with connection.cursor() as cursor:
+                            cursor.execute('START TRANSACTION')
+                            cursor.execute('UPDATE cart SET quantity = %s WHERE product_id = %s and customer_email = %s ', (currQty, data_received['field1'][0], cookie_value, ))
+                            cursor.execute('COMMIT;')
+                    else:
+                        err = True
+                        errName = sql_cart_data[0][4]
                 else: #fresh insert
                     with connection.cursor() as cursor:
                         cursor.execute('START TRANSACTION')
                         cursor.execute('INSERT INTO cart (quantity, customer_email, product_id) VALUES (1, %s, %s)', (cookie_value, data_received['field1'][0],))        
                         cursor.execute('COMMIT;')
-                #update stock
-    
-                with connection.cursor() as cursor:
-                    cursor.execute('SELECT stock, name FROM product WHERE product_id = %s', (data_received['field1'][0],))
-                    curr_product_stock = cursor.fetchall() 
-                
-                newStock = curr_product_stock[0][0] - 1
-
-                with connection.cursor() as cursor:
-                    cursor.execute('UPDATE product SET stock = %s WHERE product_id = %s', (newStock, data_received['field1'][0],))
-
 
                 #then fetch
                 with connection.cursor() as cursor:
@@ -296,8 +281,11 @@ def cart(request):
                     total += item[0] * item[5]
                 print(total)
 
+                if err:
+                    return render(request, "cart.html", {'cart': sql_data2, 'total': total, 'total_delivery': total+5, 'error': errName + ': Maximum order quantity is 5!'})
+                else:
                 #then render
-                return render(request, "cart.html", {'cart': sql_data2, 'total': total, 'total_delivery': total+5})
+                    return render(request, "cart.html", {'cart': sql_data2, 'total': total, 'total_delivery': total+5})
         else:
             #then fetch
             with connection.cursor() as cursor:
@@ -310,8 +298,18 @@ def cart(request):
                 total += item[0] * item[5]
             print(total)
 
+            err_cookie = request.COOKIES.get('err')
+            if(err_cookie != None):
+                return render(request, "cart.html", {'cart': sql_data2, 'total': total, 'total_delivery': total+5, 'error': err_cookie})
+            else:
+                return render(request, "cart.html", {'cart': sql_data2, 'total': total, 'total_delivery': total+5})
+
+            '''
+            error_message = request.session.pop('error', None)
+            if error_message:
+                return render(request, "cart.html", {'cart': sql_data2, 'total': total, 'total_delivery': total+5, 'error': error_message})
             #then render#
-            return render(request, "cart.html", {'cart': sql_data2, 'total': total, 'total_delivery': total+5})
+            else:'''
             
     else:
         return redirect('login')
@@ -329,39 +327,77 @@ def checkout(request):
 
             print(pids)
             print(qtys)
-            
-            #find the new new boy in the town
-            with connection.cursor() as cursor:
-                cursor.execute('SELECT max(order_id) FROM orders')
-                order_data = cursor.fetchall()
-            
-            latestCount = order_data[0][0] + 1
-            print(latestCount)
 
-            print(user_data['total'])
-            #order_id INT PRIMARY KEY NOT NULL,
-            #put in order_history
-            with connection.cursor() as cursor:
-                cursor.execute('INSERT INTO orders (order_id, customer_email, status, amount, ordered_at, commission, rider_id) VALUES (%s, %s, %s, %s, %s, %s, %s)', (latestCount, cookie_value, 'Received', user_data['total'], datetime.now(), 0, 1))
-
-            #need to fix rider and comisssion , default value for now 0
-            
-            #put in order_details
-            n = len(pids)
-            for i in range(n):
-                currProduct = pids[i]
-                currQty = qtys[i]
-
+            #check for out of stock and remove that from cart and redirect back
+            for i in range(len(pids)):
                 with connection.cursor() as cursor:
-                    cursor.execute('INSERT INTO order_details (quantity, order_id, product_id) VALUES (%s, %s, %s)', (currQty, latestCount, currProduct))        
-            
-            #delete from cart
-            with connection.cursor() as cursor:
-                cursor.execute('DELETE FROM cart WHERE customer_email = %s', (cookie_value,))
+                    cursor.execute('SELECT stock FROM product WHERE product_id = %s', (pids[i],))
+                    stock_data = cursor.fetchall()
+        
+            errTuple = []
+            err = False
+            print(stock_data)
+            if int(qtys[i]) > int(stock_data[0][0]):
+                #remove from cart
+                err = True
+                with connection.cursor() as cursor:
+                    cursor.execute('DELETE FROM cart WHERE customer_email = %s and product_id = %s', (cookie_value, pids[i]))
+                errTuple.append(pids[i])   
 
-            #should fix resubmission form
+            if err:
+                 #i need names
+                n = len(errTuple)
+                errName = []
+                for i in range(n):
+                    with connection.cursor() as cursor:
+                        cursor.execute('SELECT name FROM product WHERE product_id = %s', (errTuple[i],))
+                        name_data = cursor.fetchall()
+                    errName.append(name_data[0][0])                        
+                
+                errSTR = ""
+                for product in errName:
+                    errSTR += product + ', '
+                
+                response = redirect('cart')
+                # Set the cookie on the response object
+                response.set_cookie('err', f"{errSTR}: Out of stock", expires='Thu, 31 Dec 2024 23:59:59 GMT', path='/')
+                # Return the response
+                return response                
+                
+                #request.session['error'] = f"{errSTR}: Out of stock" - lousy alternative
+            else:
+            #find the new new boy in the town
+                with connection.cursor() as cursor:
+                    cursor.execute('SELECT max(order_id) FROM orders')
+                    order_data = cursor.fetchall()
+                
+                latestCount = order_data[0][0] + 1
+                print(latestCount)
 
-            return render(request, 'thankyou.html')
+                print(user_data['total'])
+                #order_id INT PRIMARY KEY NOT NULL,
+                #put in order_history
+                with connection.cursor() as cursor:
+                    cursor.execute('INSERT INTO orders (order_id, customer_email, status, amount, ordered_at, commission, rider_id) VALUES (%s, %s, %s, %s, %s, %s, %s)', (latestCount, cookie_value, 'Received', user_data['total'], datetime.now(), 0, 1))
+
+                #put in order_details
+                n = len(pids)
+                for i in range(n):
+                    currProduct = pids[i]
+                    currQty = qtys[i]
+
+                    with connection.cursor() as cursor:
+                        cursor.execute('INSERT INTO order_details (quantity, order_id, product_id) VALUES (%s, %s, %s)', (currQty, latestCount, currProduct))        
+                        #updating stock
+                        cursor.execute('UPDATE product SET stock = stock - %s WHERE product_id = %s', (currQty, currProduct))
+
+                #delete from cart
+                with connection.cursor() as cursor:
+                    cursor.execute('DELETE FROM cart WHERE customer_email = %s', (cookie_value,))
+
+                #should fix resubmission form
+
+                return render(request, 'thankyou.html')
         else:
             return redirect('main')
             
