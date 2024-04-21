@@ -300,7 +300,12 @@ def cart(request):
 
             err_cookie = request.COOKIES.get('err')
             if(err_cookie != None):
-                return render(request, "cart.html", {'cart': sql_data2, 'total': total, 'total_delivery': total+5, 'error': err_cookie})
+                response = render(request, "cart.html", {'cart': sql_data2, 'total': total, 'total_delivery': total+5, 'error': err_cookie})
+
+                # Delete the cookie 'my_cookie' by setting its max_age to 0
+                response.delete_cookie('err')
+
+                return response
             else:
                 return render(request, "cart.html", {'cart': sql_data2, 'total': total, 'total_delivery': total+5})
 
