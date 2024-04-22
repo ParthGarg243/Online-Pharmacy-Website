@@ -582,7 +582,7 @@ def approval(request):
                 cursor.execute('START TRANSACTION;')
                 
                 # Update the order status
-                cursor.execute('UPDATE orders SET status = %s WHERE order_id = %s;', ("Processing", data_received['orderid']))
+                cursor.execute('UPDATE orders SET status = %s WHERE order_id = %s;', ("Shipped", data_received['orderid']))
                 
                 # Select pharmacist orders
                 
