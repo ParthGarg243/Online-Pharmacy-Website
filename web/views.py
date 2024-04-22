@@ -640,7 +640,7 @@ def stock(request):
                 if key != 'csrfmiddlewaretoken':
                     #acquire lock
                     with connection.cursor() as cursor:
-                        cursor.execute('UPDATE lock_stock SET w = 1 WHERE id = %s', (1))
+                        cursor.execute('UPDATE lock_stock SET w = 1 WHERE id = %s', (str(1), ))
                     #do this
                     with connection.cursor() as cursor:
                         cursor.execute('START TRANSACTION;')
