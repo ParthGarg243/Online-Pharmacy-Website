@@ -5,6 +5,7 @@ from django.views.decorators.csrf import *
 from django.http import HttpResponseRedirect
 from django.db import connection
 from django.shortcuts import redirect
+from django.db import OperationalError, IntegrityError, DataError
 
 #use views.py for serving a page
 #for updating elements use ajax
@@ -70,20 +71,37 @@ def helperS(request):
                 sql_data = cursor.fetchall()
             print(sql_data, data_received)
             print(len(sql_data))
-            #Trigger 1
+            
+            #Transaction 1
+            try:
+                with connection.cursor() as cursor:
+                    #insert the data into table
+                    cursor.execute('START TRANSACTION;')
+                    cursor.execute('INSERT INTO customer (customer_email, customer_password, first_name, last_name, phone_number, date_of_birth, gender, membership, address_line, pincode) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);', 
+                    (data_received['email'], data_received['pswd'], data_received['fname'], data_received['lname'], data_received['phone'], data_received['dob'], 'M', 'N', data_received['address'], data_received['pincode'])) 
+                    connection.commit()
 
-            with connection.cursor() as cursor:
-                #insert the data into table
-                cursor.execute('START TRANSACTION; INSERT INTO customer (customer_email, customer_password, first_name, last_name, phone_number, date_of_birth, gender, membership, address_line, pincode) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s); COMMIT;', 
-                (data_received['email'], data_received['pswd'], data_received['fname'], data_received['lname'], data_received['phone'], data_received['dob'], 'M', 'N', data_received['address'], data_received['pincode'])) 
-                
-                #create cooki
-                #redirect
-                response = redirect('main')
-                # Set the cookie on the response object
-                response.set_cookie('login_set', data_received['email'], expires='Thu, 31 Dec 2024 23:59:59 GMT', path='/')
-                # Return the response
-                return response
+            except OperationalError as e:
+                # Handle operational errors such as data type mismatch
+                print("An operational error occurred during the insert:", e)
+                # Roll back the transaction
+                connection.rollback()
+                return redirect('login')
+
+            except IntegrityError as e:
+                # Handle integrity errors
+                print("An integrity error occurred during the insert:", e)
+                # Roll back the transaction
+                connection.rollback()
+                return redirect('login')
+            
+            #create cooki
+            #redirect
+            response = redirect('main')
+            # Set the cookie on the response object
+            response.set_cookie('login_set', data_received['email'], expires='Thu, 31 Dec 2024 23:59:59 GMT', path='/')
+            # Return the response
+            return response
             #can use ajax instead of this so that you dont have to refresh the page better for security as well 
             
         else:
@@ -175,25 +193,32 @@ def cart(request):
                 #check
                 print(data_received['pid'])
                 #update inventory and stock
+                #Transaction 2
                 err = False
                 if (data_received['action'] == 'add'): #if stock is there                    
                    #update value of cart
-                    with connection.cursor() as cursor:
-                        cursor.execute('SELECT * FROM cart, product WHERE customer_email = %s and cart.product_id = product.product_id and cart.product_id = %s', (cookie_value, data_received['pid'][0],))
-                        cart_data_product = cursor.fetchall()
-
-                    print(cart_data_product)
-                    
-                    newQty = cart_data_product[0][0] + 1
-
-                    if newQty <= 5:
+                    try:
                         with connection.cursor() as cursor:
                             cursor.execute('START TRANSACTION;')
-                            cursor.execute('UPDATE cart SET quantity = %s WHERE product_id = %s and customer_email = %s ', (newQty, data_received['pid'][0], cookie_value, ))
-                            cursor.execute('COMMIT;')
-                    else:
-                        err = True
-                        errName = cart_data_product[0][4]
+                            cursor.execute('UPDATE cart SET quantity = quantity + 1 WHERE product_id = %s and customer_email = %s ', (data_received['pid'][0], cookie_value, ))
+                            connection.commit()
+
+                    except OperationalError as e:
+                        # Handle operational errors such as data type mismatch
+                        print("An operational error occurred during the insert:", e)
+                        # Roll back the transaction
+                        connection.rollback()
+                        return redirect('cart')
+
+                    except IntegrityError as e:
+                        # Handle integrity errors
+                        print("An integrity error occurred during the insert:", e)
+                        # Roll back the transaction
+                        connection.rollback()
+                        return redirect('cart')
+                    
+                    return redirect('cart')
+  
                 elif(data_received['action'] == 'remove'):
                     #update value of cart
                     with connection.cursor() as cursor:
@@ -201,7 +226,8 @@ def cart(request):
                         cart_data_product = cursor.fetchall()
                 
                     print(cart_data_product)
-                
+
+                    #Transaction 2.5
                     newQty = cart_data_product[0][0] - 1
                     if newQty == 0:
                         with connection.cursor() as cursor:
@@ -224,12 +250,7 @@ def cart(request):
                     total += item[0] * item[5]
                 print(total)
 
-                #then render#
-                if err: # need  to fix a appropriate error message for out of stock
-                    #append to the item and uhhhhhh yeah so if it matches pid and then append it to the thing and thang
-                    return render(request, "cart.html", {'cart': cart_all, 'total': total, 'total_delivery': total+5, 'error': errName + ': Maximum order quantity is 5!'})
-                else:
-                    return render(request, "cart.html", {'cart': cart_all, 'total': total, 'total_delivery': total+5})
+                return render(request, "cart.html", {'cart': cart_all, 'total': total, 'total_delivery': total+5})
         
                         #update
                     #update cart
@@ -248,22 +269,32 @@ def cart(request):
                 with connection.cursor() as cursor:
                     cursor.execute('SELECT * FROM cart, product WHERE customer_email = %s and cart.product_id = product.product_id and cart.product_id = %s', (cookie_value, data_received['field1'][0],))
                     sql_cart_data = cursor.fetchall()
-                
-                print(sql_cart_data)
-                err = False
+                #transaction 4
+                #print(sql_cart_data)
                 if(len(sql_cart_data) == 1): #if its to be updated
-                    currQty = sql_cart_data[0][0] + 1
-
-                    #print(data_received, sql_customer)
-                    print(int(data_received['field1'][0]))
-                    if currQty <= 5:
+                    print("piddi")
+                    print(data_received)
+                    try:
                         with connection.cursor() as cursor:
-                            cursor.execute('START TRANSACTION')
-                            cursor.execute('UPDATE cart SET quantity = %s WHERE product_id = %s and customer_email = %s ', (currQty, data_received['field1'][0], cookie_value, ))
-                            cursor.execute('COMMIT;')
-                    else:
-                        err = True
-                        errName = sql_cart_data[0][4]
+                            cursor.execute('START TRANSACTION;')
+                            cursor.execute('UPDATE cart SET quantity = quantity + 1 WHERE product_id = %s and customer_email = %s ', (data_received['field1'][0], cookie_value, ))
+                            connection.commit()
+
+                    except OperationalError as e:
+                        # Handle operational errors such as data type mismatch
+                        print("An operational error occurred during the insert:", e)
+                        # Roll back the transaction
+                        connection.rollback()
+                        return redirect('cart')
+
+                    except IntegrityError as e:
+                        # Handle integrity errors
+                        print("An integrity error occurred during the insert:", e)
+                        # Roll back the transaction
+                        connection.rollback()
+                        return redirect('cart')
+                    
+                    return redirect('cart')
                 else: #fresh insert
                     with connection.cursor() as cursor:
                         cursor.execute('START TRANSACTION')
@@ -281,11 +312,7 @@ def cart(request):
                     total += item[0] * item[5]
                 print(total)
 
-                if err:
-                    return render(request, "cart.html", {'cart': sql_data2, 'total': total, 'total_delivery': total+5, 'error': errName + ': Maximum order quantity is 5!'})
-                else:
-                #then render
-                    return render(request, "cart.html", {'cart': sql_data2, 'total': total, 'total_delivery': total+5})
+                return render(request, "cart.html", {'cart': sql_data2, 'total': total, 'total_delivery': total+5})
         else:
             #then fetch
             with connection.cursor() as cursor:
@@ -321,118 +348,91 @@ def cart(request):
 
 def checkout(request):
     cookie_value = request.COOKIES.get('login_set', 'no')
-    print(cookie_value)
+    #print(cookie_value)
     if(cookie_value != None and cookie_value != 'no'):
         if request.method == 'POST':
             user_data = request.POST
-            print(user_data)
 
             pids = user_data.getlist('pid')
             qtys = user_data.getlist('qty')
-
-            print(pids)
-            print(qtys)
-            
-            #check for lock
+                
+            #main transaction5
             with connection.cursor() as cursor:
                 cursor.execute('SELECT w FROM lock_stock WHERE id = %s', (1,))
                 write = cursor.fetchall()
-            print("yabba")
-            print(write)
-            err = False
-            if write[0][0] != '0': #if someones updating the stock w-w case
-                redirect('main')
-            else:
-                #acquire lock
+
+            if write[0][0] != 0: #if someones updating the stock w-w case 
+                return redirect('main')
+            else:#lock is free, acquire it
+                print("this block")
                 with connection.cursor() as cursor:
                     cursor.execute('UPDATE lock_stock SET w = 1 WHERE id = %s', (1,))
-                #perform read
-                #check for out of stock and remove that from cart and redirect back
-                for i in range(len(pids)):
-                    with connection.cursor() as cursor:
-                        cursor.execute('BEGIN TRANSACTION;')
-                        cursor.execute('SELECT stock FROM product WHERE product_id = %s;', (pids[i],))
-                        cursor.execute('COMMIT;')
-                        stock_data = cursor.fetchall()
 
-                errTuple = []
-                print(stock_data)
-                if int(qtys[i]) > int(stock_data[0][0]):
-                    #remove from cart
-                    err = True
-                    with connection.cursor() as cursor:
-                        cursor.execute('DELETE FROM cart WHERE customer_email = %s and product_id = %s', (cookie_value, pids[i]))
-                    errTuple.append(pids[i])   
-                
-                #leave lock
-                with connection.cursor() as cursor:
-                    cursor.execute('UPDATE lock_stock SET w = 0 WHERE id = %s', (1,))
-            #---- write case can iignore
-            if err:
-                 #i need names
-                n = len(errTuple)
-                errName = []
-                for i in range(n):
-                    with connection.cursor() as cursor:
-                        cursor.execute('SELECT name FROM product WHERE product_id = %s', (errTuple[i],))
-                        name_data = cursor.fetchall()
-                    errName.append(name_data[0][0])                        
-                
-                errSTR = ""
-                for product in errName:
-                    errSTR += product + ', '
-                
-                response = redirect('cart')
-                # Set the cookie on the response object
-                response.set_cookie('err', f"{errSTR}: Out of stock", expires='Thu, 31 Dec 2024 23:59:59 GMT', path='/')
-                # Return the response
-                return response                
-                
-                #request.session['error'] = f"{errSTR}: Out of stock" - lousy alternative
-            else:
-            #find the new new boy in the town
-            #check if product table is empty. r  if its writing
-            #read while writing 
-            # w if its reading and w if its w - chekcout vs updating stck. w while reading is not fine
-                with connection.cursor() as cursor:
-                    cursor.execute('SELECT w FROM lock_stock WHERE id = %s', (0,))
-                    write = cursor.fetchall()
-                '''
-                if write[0][0] != 0: #if someones updating the stock w-w case
-                    return redirect("main")                       
-                else:'''
                 with connection.cursor() as cursor:
                     cursor.execute('SELECT max(order_id) FROM orders')
                     order_data = cursor.fetchall()
-
                 latestCount = order_data[0][0] + 1
-                print(latestCount)
 
-                print(user_data['total'])
-                #order_id INT PRIMARY KEY NOT NULL,
-                #put in order_history
-                with connection.cursor() as cursor:
-                    cursor.execute('INSERT INTO orders (order_id, customer_email, status, amount, ordered_at, commission, rider_id) VALUES (%s, %s, %s, %s, %s, %s, %s)', (latestCount, cookie_value, 'Received', user_data['total'], datetime.now(), 0, 1))
+                try:
+                    with connection.cursor() as cursor:
+                        cursor.execute('START TRANSACTION;')
+                        cursor.execute('INSERT INTO orders (order_id, customer_email, status, amount, ordered_at, commission, rider_id) VALUES (%s, %s, %s, %s, %s, %s, %s);', (latestCount, cookie_value, 'Received', user_data['total'], datetime.now(), 0, 1))
+                        #put in order_details
+                        n = len(pids)
+                        for i in range(n):
+                            currProduct = pids[i]
+                            currQty = qtys[i]
+                            print(currProduct)
+                            cursor.execute('INSERT INTO order_details (quantity, order_id, product_id) VALUES (%s, %s, %s);', (currQty, latestCount, currProduct))        
+                            cursor.execute('UPDATE product SET stock = stock - %s WHERE product_id = %s;', (currQty, currProduct))
 
-                #put in order_details
-                n = len(pids)
-                for i in range(n):
-                    currProduct = pids[i]
-                    currQty = qtys[i]
+                        cursor.execute('DELETE FROM cart WHERE customer_email = %s;', (cookie_value,))
+                    connection.commit()
+
+                except OperationalError as e:
+                # Handle operational errors such as data type mismatch
+                    print("An operational error occurred during the insert:", e)
+                    # Roll back the transaction
+                    connection.rollback()
+
+                    for i in range(len(pids)):
+                        with connection.cursor() as cursor:
+                            cursor.execute('SELECT stock FROM product WHERE product_id = %s;', (pids[i],))
+                            stock_data = cursor.fetchall()
+
+                        if int(qtys[i]) > int(stock_data[0][0]):
+                            #remove from cart
+                            with connection.cursor() as cursor:
+                                cursor.execute('DELETE FROM cart WHERE customer_email = %s and product_id = %s', (cookie_value, pids[i]))
 
                     with connection.cursor() as cursor:
-                        cursor.execute('INSERT INTO order_details (quantity, order_id, product_id) VALUES (%s, %s, %s)', (currQty, latestCount, currProduct))        
-                        cursor.execute('UPDATE product SET stock = stock - %s WHERE product_id = %s', (currQty, currProduct))
+                        cursor.execute('UPDATE lock_stock SET w = 0 WHERE id = %s', (1,))           
+                    return redirect('cart')
 
-                #delete from cart
+                except IntegrityError as e:
+                    # Handle integrity errors
+                    print("An integrity error occurred during the insert:", e)                    
+                    # Roll back the transaction
+                    connection.rollback()
+
+                    #update cart
+                    for i in range(len(pids)):
+                        with connection.cursor() as cursor:
+                            cursor.execute('SELECT stock FROM product WHERE product_id = %s;', (pids[i],))
+                            stock_data = cursor.fetchall()
+
+                        if int(qtys[i]) > int(stock_data[0][0]):
+                            #remove from cart
+                            with connection.cursor() as cursor:
+                                cursor.execute('DELETE FROM cart WHERE customer_email = %s and product_id = %s', (cookie_value, pids[i]))
+                    
+                    with connection.cursor() as cursor:
+                        cursor.execute('UPDATE lock_stock SET w = 0 WHERE id = %s', (1,))
+                    return redirect('cart')
+                
+                #release lock
                 with connection.cursor() as cursor:
-                    cursor.execute('DELETE FROM cart WHERE customer_email = %s', (cookie_value,))
-
-                #should fix resubmission form
-
-                #dip lock
-
-
+                    cursor.execute('UPDATE lock_stock SET w = 0 WHERE id = %s', (1,))
                 return render(request, 'thankyou.html')
         else:
             return redirect('main')
@@ -501,17 +501,41 @@ def profile(request):
     
 def update (request):
     cookie_value = request.COOKIES.get('login_set')
-    print(cookie_value)
+    #print(cookie_value)
     if(cookie_value != None and cookie_value != 'no'):
         if request.method == 'POST':
             user_data = request.POST
-            print(user_data)
+            #print(user_data)
             #need to check data like during signup
+            #Transaction 4
+            try:
+                with connection.cursor() as cursor:
+                    #insert the data into table
+                    cursor.execute('START TRANSACTION;')
+                    cursor.execute('UPDATE customer SET first_name = %s, last_name = %s, phone_number = %s, address_line = %s, pincode = %s WHERE customer_email = %s;', (user_data['fname'], user_data['lname'], user_data['phone'], user_data['address'], user_data['pin'], cookie_value))
+                    connection.commit()
 
+            except OperationalError as e:
+                # Handle operational errors such as data type mismatch
+                print("An operational error occurred during the insert:", e)
+                # Roll back the transaction
+                connection.rollback()
+                return redirect('profile')
+
+            except IntegrityError as e:
+                # Handle integrity errors
+                print("An integrity error occurred during the insert:", e)
+                # Roll back the transaction
+                connection.rollback()
+                return redirect('profile')
             
+            except DataError as e:
+                # Handle integrity errors
+                print("An integrity error occurred during the insert:", e)
+                # Roll back the transaction
+                connection.rollback()
+                return redirect('profile')
             #update the user data
-            with connection.cursor() as cursor:
-                cursor.execute('START TRANSACTION; UPDATE customer SET first_name = %s, last_name = %s, phone_number = %s, address_line = %s, pincode = %s WHERE customer_email = %s; COMMIT;', (user_data['fname'], user_data['lname'], user_data['phone'], user_data['address'], user_data['pin'], cookie_value))
             
             return redirect('profile')
             
@@ -536,6 +560,7 @@ def history(request):
         
         order_data={}
         for order_id in order_id_data:
+            #transaction 6
             #check for write lock acuire lock before user reads else redirect to profile even if one is bad
             with connection.cursor() as cursor:
                 cursor.execute('SELECT w FROM lock_order WHERE order_id = %s', (order_id[0],))
@@ -573,23 +598,42 @@ def approval(request):
             #update and fetch couldve used ajax
             data_received = request.POST
             print(data_received)
-            #acquire lock
+            #acquire lock - no one else acquires the lock
             with connection.cursor() as cursor:
                 cursor.execute('UPDATE lock_order SET w = 1 WHERE order_id = %s', (data_received['orderid'], ))
 
-            #update the stock
-            with connection.cursor() as cursor:
-                cursor.execute('START TRANSACTION;')
-                
-                # Update the order status
-                cursor.execute('UPDATE orders SET status = %s WHERE order_id = %s;', ("Shipped", data_received['orderid']))
-                
-                # Select pharmacist orders
-                
-                # Commit the transaction
-                cursor.execute('COMMIT;')
+            try:
+                #update the stock
+                with connection.cursor() as cursor:
+                    cursor.execute('START TRANSACTION;')
+                    
+                    # Update the order status
+                    cursor.execute('UPDATE orders SET status = %s WHERE order_id = %s;', ("Shipped", data_received['orderid']))
+                    
+                    # Select pharmacist orders
+                    
+                    # Commit the transaction
+                    connection.commit()
 
-                # Fetch the pharmacist orders
+            except OperationalError as e: 
+                # Handle operational errors
+                print("An operational error occurred during the insert:", e)
+                # Roll back the transaction
+                connection.rollback()
+                with connection.cursor() as cursor:
+                    cursor.execute('UPDATE lock_order SET w = 0 WHERE order_id = %s', (data_received['orderid'], ))
+                return redirect('approval')
+
+            except IntegrityError as e:
+                # Handle integrity errors
+                print("An integrity error occurred during the insert:", e)
+                # Roll back the transaction
+                connection.rollback()
+                with connection.cursor() as cursor:
+                    cursor.execute('UPDATE lock_order SET w = 0 WHERE order_id = %s', (data_received['orderid'], ))
+                return redirect('approval')            
+
+            # Fetch the pharmacist orders
             with connection.cursor() as cursor:
                 cursor.execute('select orders.order_id, orders.amount from pharmacist, order_approval, orders where pharmacist.pharmacist_id = %s and pharmacist.pharmacist_id = order_approval.pharmacist_id and order_approval.order_id = orders.order_id and orders.status = %s', (cookie_value, "Received"))
                 pharmacist_orders = cursor.fetchall()
