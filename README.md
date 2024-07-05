@@ -1,75 +1,54 @@
-# DBMS_Project
-मेडिकल स्टोर
+# Online Pharmacy Website
 
-pipenv shell
+An online pharmacy website made as a part of the course project for CSE202: Fundamentals of Database Management Systems course conducted in Winter 2024.
 
-python manage.py runserver
+## Features
 
-http://localhost:8000/web/login/
+### 1. Sign Up or Sign In
+To access the features of our application, users need to sign up if they are new or sign in if they already have an account. You can find the sign-up and sign-in options on the homepage.
 
-Outstanding issues:
+### 2. Homepage Redirect
+After signing in or signing up, users will be redirected to the homepage of our website. From there, they can browse and purchase products available in our inventory.
 
-fix images to blob rather than path
-Rider part
-more buttons for shipped in pharmacist
-support
-adding profile pic
-adding new product
-can fix cart update into ajax and profile update as well and add to new menu
-infact everything so as to avoid form submission re error
-Fix update details check data
-fix signup error js
+### 3. Update Profile
+Once signed in, users can update their profile details such as name, phone number, address, etc., from the profile section. Simply navigate to the profile section for this.
 
-CONFLICT 1
-[9:16 AM, 4/21/2024] Rayyan Hussain: if a user is trying to checkout(read stock value) when the manager is trying to update stock, manager acquires lock
-            #check for lock
-            with connection.cursor() as cursor:
-                cursor.execute('SELECT w FROM lock_stock WHERE id = %s', (0,))
-                write = cursor.fetchall()
-            
-            if write[0][0] != 0: #if someones updating the stock w-w case
-                redirect('main')
-            else:
-                #acquire lock
-                with connection.cursor() as cursor:
-                    cursor.execute('UPDATE lock_stock SET w = 1 WHERE id = %s', (0,))
-                #perform read
-                #check for out of stock and remove that from cart and redirect back
-                for i in range(len(pids)):
-                    with connection.cursor() as cursor:
-                        cursor.execute('BEGIN TRANSACTION;')
-                        cursor.execute('SELECT stock FROM product WHERE product_id = %s;', (pids[i],))
-                        cursor.execute('COMMIT;')
-                        stock_data = cursor.fetchall()
+### 4. View Order History
+From the profile section, users can view their order history to track their previous purchases. This helps in keeping a record of all transactions made on the platform.
 
-            
-                errTuple = []
-                err = False
-                print(stock_data)
-                if int(qtys[i]) > int(stock_data[0][0]):
-                    #remove from cart
-                    err = True
-                    with connection.cursor() as cursor:
-                        cursor.execute('DELETE FROM cart WHERE customer_email = %s and product_id = %s', (cookie_value, pids[i]))
-                    errTuple.append(pids[i])   
-                
-                #leave lock
-                    with connection.cursor() as cursor:
-                        cursor.execute('UPDATE lock_stock SET w = 0 WHERE id = %s', (0,))
-[9:20 AM, 4/21/2024] Rayyan Hussain: Manager acquiring lock
-[9:20 AM, 4/21/2024] Rayyan Hussain: for key in data_received:
-                if key != 'csrfmiddlewaretoken':
-                    #acquire lock
-                    with connection.cursor() as cursor:
-                        cursor.execute('UPDATE lock_stock SET w = 1 WHERE id = %s', (0))
-                    #do this
-                    with connection.cursor() as cursor:
-                        cursor.execute('SELECT stock FROM product WHERE product_id = %s', (key,))
-                        curr_stock = cursor.fetchall()
-                        print(curr_stock[0][0])
-                        cursor.execute('UPDATE product SET stock = %s WHERE product_id = %s', (curr_stock[0][0] + int(data_received[key]), key))
-                    #release lock
-                        with connection.cursor() as cursor:
-                            cursor.execute('UPDATE lock_stock SET w = 0 WHERE id = %s', (0))
+### 5. Update Cart Items and Quantity
+Users can update their cart items by navigating to the cart section. Here, they can remove or update the quantity of products they wish to purchase before proceeding to checkout.
 
-CONFLICT 2:
+### 6. Approval Request for Orders
+Whenever a user places an order, an approval request will be automatically sent to the pharmacist. The order will only be processed and delivered after approval from the pharmacist.
+
+### 7. Sign Out
+Users can sign out of their account by accessing the profile section and selecting the "Sign Out" option.
+
+### 8. Admin Dashboard for Pharmacists
+Pharmacists have access to the admin dashboard, where they can analyze product sales, monitor stock levels, and manage order approvals.
+
+### 9. Approve Orders from Dashboard
+Pharmacists can approve pending orders directly from the admin dashboard. Upon reviewing the order details, they can approve or reject orders.
+
+### 10. Update Stock
+Pharmacists have the authority to update stock levels whenever an item runs out of stock. They can replenish stock quantities through the admin dashboard to ensure continuous availability of products for users.
+
+## Quick Start Guide
+
+### Launching the Development Server
+
+1. Activate the virtual environment:
+   ```bash
+   pipenv shell
+   ```
+
+2. Run the Django development server:
+   ```bash
+   python manage.py runserver
+   ```
+
+3. Open your web browser and navigate to:
+   ```
+   http://localhost:8000/web/login/
+   ```
