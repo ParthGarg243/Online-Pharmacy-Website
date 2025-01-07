@@ -57,8 +57,10 @@ def checkNPD(tupleNPD) -> tuple:
 
 @csrf_protect
 def helperS(request):
+    
     cookie_value = request.COOKIES.get('login_set', 'no')
     print(cookie_value)
+    
     if(cookie_value != None and cookie_value != 'no'):
         return redirect('main')
     else:
@@ -99,7 +101,7 @@ def helperS(request):
             #redirect
             response = redirect('main')
             # Set the cookie on the response object
-            response.set_cookie('login_set', data_received['email'], expires='Thu, 31 Dec 2024 23:59:59 GMT', path='/')
+            response.set_cookie('login_set', data_received['email'], path='/')
             # Return the response
             return response
             #can use ajax instead of this so that you dont have to refresh the page better for security as well 
@@ -125,6 +127,7 @@ def helperS(request):
 #PRG method #helper url
 @csrf_protect
 def helper(request):
+
     #if cookies exist
     cookie_value = request.COOKIES.get('login_set', 'no')
     print(cookie_value)
@@ -142,7 +145,7 @@ def helper(request):
                 # Login successful
                 response = redirect('main')
                 # Set the cookie on the response object
-                response.set_cookie('login_set', data_received['email'], expires='Thu, 31 Dec 2024 23:59:59 GMT', path='/')
+                response.set_cookie('login_set', data_received['email'], path='/')
                 # Return the response
                 return response
             else:
@@ -229,16 +232,18 @@ def cart(request):
 
                     #Transaction 2.5
                     newQty = cart_data_product[0][0] - 1
+                    print("New Quantity = ", newQty)
                     if newQty == 0:
                         with connection.cursor() as cursor:
                             cursor.execute('START TRANSACTION;')
                             cursor.execute('DELETE FROM cart WHERE product_id = %s and customer_email = %s', (data_received['pid'][0], cookie_value, ))
-                            cursor.execute('COMMIT;')
+                            connection.commit()
+                        
                     else:
                         with connection.cursor() as cursor:
                             cursor.execute('START TRANSACTION;')
                             cursor.execute('UPDATE cart SET quantity = %s WHERE product_id = %s and customer_email = %s ', (newQty, data_received['pid'][0], cookie_value, ))
-                            cursor.execute('COMMIT;')
+                            connection.commit()
                 
                 with connection.cursor() as cursor:
                     cursor.execute('SELECT * FROM cart, product WHERE customer_email = %s and cart.product_id = product.product_id', (cookie_value,))
@@ -297,9 +302,9 @@ def cart(request):
                     return redirect('cart')
                 else: #fresh insert
                     with connection.cursor() as cursor:
-                        cursor.execute('START TRANSACTION')
+                        cursor.execute('START TRANSACTION;')
                         cursor.execute('INSERT INTO cart (quantity, customer_email, product_id) VALUES (1, %s, %s)', (cookie_value, data_received['field1'][0],))        
-                        cursor.execute('COMMIT;')
+                        connection.commit()
 
                 #then fetch
                 with connection.cursor() as cursor:
@@ -372,21 +377,27 @@ def checkout(request):
                     cursor.execute('SELECT max(order_id) FROM orders')
                     order_data = cursor.fetchall()
                 latestCount = order_data[0][0] + 1
+                
+                #building the sql query string
+                SQLString = "START TRANSACTION;\nINSERT INTO orders (order_id, customer_email, status, amount, ordered_at, commission, rider_id) VALUES (%s, %s, %s, %s, %s, %s, %s);"
+                SQLString = SQLString %  (latestCount, cookie_value, 'Received', user_data['total'], datetime.now(), 0, 1)
+
+                n = len(pids)
+                for i in range(n):
+                    SQLString = SQLString + '\nINSERT INTO order_details (quantity, order_id, product_id) VALUES (%s, %s, %s);'
+                    SQLString = SQLString % (qtys[i], latestCount, pids[i])
+                    
+                    SQLString = SQLString + '\nUPDATE product SET stock = stock - %s WHERE product_id = %s;'
+                    SQLString = SQLString % (qtys[i], pids[i])
+
+                SQLString = SQLString + '\nDELETE FROM cart WHERE customer_email = %s;'
+                SQLString = SQLString % (cookie_value)
+                SQLString = SQLString + '\nCOMMIT;'
+                print(SQLString)
 
                 try:
                     with connection.cursor() as cursor:
-                        cursor.execute('START TRANSACTION;')
-                        cursor.execute('INSERT INTO orders (order_id, customer_email, status, amount, ordered_at, commission, rider_id) VALUES (%s, %s, %s, %s, %s, %s, %s);', (latestCount, cookie_value, 'Received', user_data['total'], datetime.now(), 0, 1))
-                        #put in order_details
-                        n = len(pids)
-                        for i in range(n):
-                            currProduct = pids[i]
-                            currQty = qtys[i]
-                            print(currProduct)
-                            cursor.execute('INSERT INTO order_details (quantity, order_id, product_id) VALUES (%s, %s, %s);', (currQty, latestCount, currProduct))        
-                            cursor.execute('UPDATE product SET stock = stock - %s WHERE product_id = %s;', (currQty, currProduct))
-
-                        cursor.execute('DELETE FROM cart WHERE customer_email = %s;', (cookie_value,))
+                        cursor.execute(SQLString)
                     connection.commit()
 
                 except OperationalError as e:
@@ -415,17 +426,6 @@ def checkout(request):
                     # Roll back the transaction
                     connection.rollback()
 
-                    #update cart
-                    for i in range(len(pids)):
-                        with connection.cursor() as cursor:
-                            cursor.execute('SELECT stock FROM product WHERE product_id = %s;', (pids[i],))
-                            stock_data = cursor.fetchall()
-
-                        if int(qtys[i]) > int(stock_data[0][0]):
-                            #remove from cart
-                            with connection.cursor() as cursor:
-                                cursor.execute('DELETE FROM cart WHERE customer_email = %s and product_id = %s', (cookie_value, pids[i]))
-                    
                     with connection.cursor() as cursor:
                         cursor.execute('UPDATE lock_stock SET w = 0 WHERE id = %s', (1,))
                     return redirect('cart')
@@ -433,6 +433,7 @@ def checkout(request):
                 #release lock
                 with connection.cursor() as cursor:
                     cursor.execute('UPDATE lock_stock SET w = 0 WHERE id = %s', (1,))
+
                 return render(request, 'thankyou.html')
         else:
             return redirect('main')
@@ -460,7 +461,7 @@ def admin(request):
             if len(sql_data) == 1:
                 #redirect
                 response = redirect('dashboard')
-                response.set_cookie('admin_set', data_received['id'], expires='Thu, 31 Dec 2024 23:59:59 GMT', path='/')
+                response.set_cookie('admin_set', data_received['id'], path='/')
                 return response
             else:
                 context = {'invalid': 'Invalid credentials! Please try again!'}

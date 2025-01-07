@@ -80,13 +80,14 @@ WSGI_APPLICATION = 'pharmacy.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
+        'ENGINE': '', #for MySQL, django.db.backends.mysql
         'NAME': 'dbms_project',
-        'USER': 'root',
-        'PASSWORD': 'Rayyan12#',
-        'HOST': 'localhost',   # Or your MySQL host
-        'PORT': '3306',        # Or your MySQL port,
-    }
+        'USER': '',
+        'PASSWORD': '',
+        'HOST': '',   # Or your MySQL host
+        'PORT': '',        # Or your MySQL port,
+        'AUTOCOMMIT': False,  # Disable autocommit
+    }   
 }
 
 # Password validation
